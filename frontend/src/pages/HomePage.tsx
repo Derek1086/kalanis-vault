@@ -1,21 +1,38 @@
-import { Link } from "react-router-dom";
+import { NavLink, useNavigate } from "react-router-dom";
+import { useDispatch, useSelector } from "react-redux";
+import { logout, reset } from "../features/auth/authSlice.ts";
+import { AppDispatch, RootState } from "../app/store.tsx";
 
-function App() {
+const HomePage = () => {
+  const navigate = useNavigate();
+  const dispatch = useDispatch<AppDispatch>();
+
+  const { user, userInfo } = useSelector((state: RootState) => state.auth);
+
+  const handleLogout = () => {
+    dispatch(logout());
+    dispatch(reset());
+    navigate("/");
+  };
+
   return (
-    <>
-      <div className="container home-page__container">
-        <h1 className="main__title">Kalani's Vault</h1>
-        <div className="home__buttons">
-          <Link to="/login" className="btn btn-secondary">
-            Login
-          </Link>
-          <Link to="/register" className="btn btn-primary">
-            Sign up
-          </Link>
-        </div>
-      </div>
-    </>
+    <nav className="navbar">
+      <ul className="nav-links">
+        {user ? (
+          <>
+            <NavLink className="nav-childs" to="/login" onClick={handleLogout}>
+              Logout
+            </NavLink>
+            <div>
+              <h1>Welcome, {userInfo.first_name} </h1>
+            </div>
+          </>
+        ) : (
+          <>Home</>
+        )}
+      </ul>
+    </nav>
   );
-}
+};
 
-export default App;
+export default HomePage;
