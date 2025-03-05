@@ -61,8 +61,8 @@ const LoginPage = () => {
 
         <form className="auth__form" onSubmit={handleSubmit}>
           <input
-            type="email"
-            placeholder="Email"
+            type="text"
+            placeholder="Email or Username"
             name="email"
             onChange={handleChange}
             value={email}

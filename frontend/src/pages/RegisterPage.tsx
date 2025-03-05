@@ -3,21 +3,21 @@ import { toast } from "react-toastify";
 import { useDispatch, useSelector } from "react-redux";
 import { register, reset } from "../features/auth/authSlice";
 import { useNavigate } from "react-router-dom";
-import { AppDispatch, RootState } from "../app/store"; // Import your store types
-//import Spinner from '../components/Spinner'
+import { AppDispatch, RootState } from "../app/store";
 
 const RegisterPage = () => {
   const [formData, setFormData] = useState({
     first_name: "",
     last_name: "",
+    username: "",
     email: "",
     password: "",
     re_password: "",
   });
 
-  const { first_name, last_name, email, password, re_password } = formData;
+  const { first_name, last_name, username, email, password, re_password } =
+    formData;
 
-  // Use the correctly typed dispatch
   const dispatch = useDispatch<AppDispatch>();
   const navigate = useNavigate();
 
@@ -41,6 +41,7 @@ const RegisterPage = () => {
       const userData = {
         first_name,
         last_name,
+        username, // Include username in user data
         email,
         password,
         re_password,
@@ -86,6 +87,14 @@ const RegisterPage = () => {
             name="last_name"
             onChange={handleChange}
             value={last_name}
+            required
+          />
+          <input
+            type="text"
+            placeholder="Username"
+            name="username"
+            onChange={handleChange}
+            value={username}
             required
           />
           <input

@@ -11,27 +11,37 @@ class CustomUserManager(BaseUserManager):
             validate_email(email)
         except ValidationError:
             raise ValueError(_("You must provide a valid email"))
+    
+    def username_validator(self, username):
+        if not username:
+            raise ValueError(_("Users must submit a username"))
         
-    def create_user(self, first_name, last_name, email, password, **extra_fields):
-
+        # Add any additional username validation logic here (e.g., allowed characters)
+        if len(username) < 3:
+            raise ValueError(_("Username must be at least 3 characters long"))
+        
+    def create_user(self, first_name, last_name, email, password, username=None, **extra_fields):
         if not first_name:
             raise ValueError(_("Users must submit a first name"))
         
         if not last_name:
             raise ValueError(_("Users must submit a last name"))
         
-
         if email:
             email = self.normalize_email(email)
             self.email_validator(email)
         else:
             raise ValueError(_("Base User: Email address is required"))
         
+        # Make username validation optional
+        if username:
+            self.username_validator(username)
         
         user = self.model(
             first_name=first_name,
             last_name=last_name,
             email=email,
+            username=username,  # Allow None
             **extra_fields
         )
 
@@ -39,11 +49,11 @@ class CustomUserManager(BaseUserManager):
         extra_fields.setdefault("is_staff", False)
         extra_fields.setdefault("is_superuser", False)
 
-        user.save()
+        user.save(using=self._db)
 
         return user
     
-    def create_superuser(self, first_name, last_name, email, password, **extra_fields):
+    def create_superuser(self, first_name, last_name, email, username, password, **extra_fields):
 
         extra_fields.setdefault("is_staff", True)
         extra_fields.setdefault("is_superuser", True)
@@ -63,9 +73,11 @@ class CustomUserManager(BaseUserManager):
             self.email_validator(email)
         else:
             raise ValueError(_("Admin User: Email address is required"))
-        
 
-        user = self.create_user(first_name, last_name, email, password, **extra_fields)
+        # Validate username
+        self.username_validator(username)
+
+        user = self.create_user(first_name, last_name, email, username, password, **extra_fields)
 
         user.save()   
 

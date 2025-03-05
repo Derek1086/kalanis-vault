@@ -159,6 +159,7 @@ SIMPLE_JWT = {
 
 DJOSER = {
     'LOGIN_FIELD': 'email',
+    'LOGIN_FIELDS': ['email', 'username'], 
     "USER_CREATE_PASSWORD_RETYPE": True,
     "USERNAME_CHANGED_EMAIL_CONFIRMATION": True,
     "PASSWORD_CHANGED_EMAIL_CONFIRMATION": True,
@@ -175,6 +176,11 @@ DJOSER = {
         'user_delete': "djoser.serializers.UserDeleteSerializer",      
     },
 }
+
+AUTHENTICATION_BACKENDS = [
+    'users.backends.EmailOrUsernameModelBackend',
+    'django.contrib.auth.backends.ModelBackend',
+]
 
 EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
 EMAIL_HOST = env("EMAIL_HOST")

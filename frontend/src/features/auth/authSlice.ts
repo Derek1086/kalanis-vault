@@ -28,9 +28,23 @@ const initialState: AuthState = {
   message: "",
 };
 
+interface RegisterUserData {
+  first_name: string;
+  last_name: string;
+  username: string;
+  email: string;
+  password: string;
+  re_password: string;
+}
+
+interface LoginUserData {
+  login: string; // Can be either email or username
+  password: string;
+}
+
 export const register = createAsyncThunk(
   "auth/register",
-  async (userData: any, thunkAPI) => {
+  async (userData: RegisterUserData, thunkAPI) => {
     try {
       return await authService.register(userData);
     } catch (error: any) {

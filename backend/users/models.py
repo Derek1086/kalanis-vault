@@ -3,13 +3,11 @@ from django.contrib.auth.models import AbstractBaseUser, PermissionsMixin
 from django.utils.translation import gettext_lazy as _
 from .managers import CustomUserManager
 
-# Create your models here.
-
-
 class User(AbstractBaseUser, PermissionsMixin):
     first_name = models.CharField(_("First Name"), max_length=100)
     last_name = models.CharField(_("Last Name"), max_length=100)
     email = models.EmailField(_("Email Address"), max_length=254, unique=True)
+    username = models.CharField(_("Username"), max_length=50, unique=True, null=True, blank=True)
     is_staff = models.BooleanField(default=False)
     is_active = models.BooleanField(default=False)
     date_joined =  models.DateTimeField(auto_now_add=True)
