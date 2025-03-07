@@ -37,11 +37,6 @@ interface RegisterUserData {
   re_password: string;
 }
 
-interface LoginUserData {
-  login: string; // Can be either email or username
-  password: string;
-}
-
 export const register = createAsyncThunk(
   "auth/register",
   async (userData: RegisterUserData, thunkAPI) => {

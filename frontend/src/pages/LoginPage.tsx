@@ -1,23 +1,33 @@
 import { useEffect, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate, NavLink } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import { login, reset, getUserInfo } from "../features/auth/authSlice";
 import { toast } from "react-toastify";
 import { AppDispatch, RootState } from "../app/store";
-//import Spinner from "../components/Spinner";
+
+import { CiAt } from "react-icons/ci";
+import { CiLock } from "react-icons/ci";
+
+import Card from "../components/Container/Card";
+import Header from "../components/Text/Header";
+import Subtitle from "../components/Text/Subtitle";
+import SecondaryButton from "../components/Button/SecondaryButton";
+import IconInputField from "../components/Input/IconInputField";
+import PasswordInputField from "../components/Input/PasswordInputField";
+import PrimaryButton from "../components/Button/PrimaryButton";
 
 const LoginPage = () => {
   const [formData, setFormData] = useState({
-    email: "",
+    email: "", // Change this from 'email' to 'email'
     password: "",
   });
 
-  const { email, password } = formData;
+  const { email, password } = formData; // Update this line
 
   const dispatch = useDispatch<AppDispatch>();
   const navigate = useNavigate();
 
-  const { user, isLoading, isError, isSuccess, message } = useSelector(
+  const { user, isError, isSuccess, message } = useSelector(
     (state: RootState) => state.auth
   );
 
@@ -32,7 +42,7 @@ const LoginPage = () => {
     e.preventDefault();
 
     const userData = {
-      email,
+      email, // Change this from 'email' to 'email'
       password,
     };
     dispatch(login(userData));
@@ -45,7 +55,6 @@ const LoginPage = () => {
 
     if (isSuccess && user) {
       navigate("/");
-      // Don't call getUserInfo() until we're sure the user is logged in
       dispatch(getUserInfo());
     }
 
@@ -54,35 +63,57 @@ const LoginPage = () => {
 
   return (
     <>
-      <div className="container auth__container">
-        <h1 className="main__title">Login</h1>
-
-        {isLoading && <p>Loading...</p>}
-
-        <form className="auth__form" onSubmit={handleSubmit}>
-          <input
+      <Card>
+        <div className="flex flex-col items-center mb-6">
+          <Header text="Sign In" />
+          <Subtitle text="Please enter your credentials to access your account" />
+        </div>
+        <form className="space-y-4" onSubmit={handleSubmit}>
+          <IconInputField
             type="text"
             placeholder="Email or Username"
             name="email"
             onChange={handleChange}
             value={email}
             required
+            icon={<CiAt className="h-5 w-5 text-gray-400" />}
           />
-          <input
-            type="password"
-            placeholder="Password"
+          <PasswordInputField
             name="password"
+            placeholder="Password"
             onChange={handleChange}
             value={password}
             required
+            icon={<CiLock className="h-5 w-5 text-gray-400" />}
           />
-          <Link to="/reset-password">Forgot Password?</Link>
-
-          <button className="btn btn-primary" type="submit">
-            Login
-          </button>
+          <div className="flex justify-end mt-4">
+            <p className="text-sm text-gray-400">
+              <NavLink
+                className="text-[#c549d4] hover:text-[#b23abc] font-medium"
+                to="/reset-password"
+              >
+                Forgot Password?
+              </NavLink>
+            </p>
+          </div>
+          <PrimaryButton type="submit">Log In</PrimaryButton>
+          <div className="relative flex items-center">
+            <div className="flex-grow border-t border-gray-300"></div>
+            <span className="flex-shrink mx-4 text-gray-500 text-sm">or</span>
+            <div className="flex-grow border-t border-gray-300"></div>
+          </div>
+          <SecondaryButton type="button" onClick={() => navigate("/register")}>
+            Create Account
+          </SecondaryButton>
+          <SecondaryButton
+            type="button"
+            className="bg-transparent hover:bg-transparent"
+            onClick={() => navigate("/")}
+          >
+            Continue as Guest
+          </SecondaryButton>
         </form>
-      </div>
+      </Card>
     </>
   );
 };

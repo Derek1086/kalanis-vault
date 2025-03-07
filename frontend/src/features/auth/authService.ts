@@ -24,13 +24,14 @@ const register = async (userData: any) => {
 };
 
 // Login user
-
-const login = async (userData: any) => {
+const login = async (userData: { email: string; password: string }) => {
   const config = {
     headers: {
       "Content-type": "application/json",
     },
   };
+
+  console.log(userData);
 
   const response = await axios.post(LOGIN_URL, userData, config);
 

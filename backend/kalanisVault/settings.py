@@ -13,6 +13,7 @@ https://docs.djangoproject.com/en/5.1/ref/settings/
 from pathlib import Path
 import environ
 from datetime import timedelta
+import os
 
 env = environ.Env(DEBUG=(bool, False))
 
@@ -28,6 +29,37 @@ SECRET_KEY = env('SECRET_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = env('DEBUG')
+
+# LOGGING = {
+#     'version': 1,
+#     'disable_existing_loggers': False,
+#     'handlers': {
+#         'console': {
+#             'class': 'logging.StreamHandler',  # Logs to the console
+#             'level': 'DEBUG',  # Only show debug messages
+#         },
+#         'file': {
+#             'class': 'logging.handlers.RotatingFileHandler',  # Rotate log files
+#             'filename': os.path.join(BASE_DIR, 'debug.log'),  # Path to the log file
+#             'maxBytes': 5 * 1024 * 1024,  # 5 MB
+#             'backupCount': 1,  # Keep 1 backup file
+#             'level': 'DEBUG',  # Only show debug messages
+#         },
+#     },
+#     'loggers': {
+#         'django': {
+#             'handlers': ['console', 'file'],  # Use both console and file handlers
+#             'level': 'DEBUG',  # Log all messages of level DEBUG and above
+#             'propagate': True,
+#         },
+#         'users': {  # Logger for your 'users' app
+#             'handlers': ['console', 'file'],
+#             'level': 'DEBUG',  # Log all messages of level DEBUG and above
+#             'propagate': True,
+#         },
+#     },
+# }
+
 
 ALLOWED_HOSTS = []
 
@@ -127,6 +159,10 @@ USE_I18N = True
 
 USE_TZ = True
 
+MEDIA_URL = "/media/"
+MEDIA_ROOT = BASE_DIR / "media"
+
+
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.1/howto/static-files/
@@ -158,8 +194,8 @@ SIMPLE_JWT = {
 }
 
 DJOSER = {
-    'LOGIN_FIELD': 'email',
-    'LOGIN_FIELDS': ['email', 'username'], 
+    'LOGIN_FIELD': 'email',  # Default login field
+    'LOGIN_FIELDS': ['email', 'username'],  # Allow login with email or username
     "USER_CREATE_PASSWORD_RETYPE": True,
     "USERNAME_CHANGED_EMAIL_CONFIRMATION": True,
     "PASSWORD_CHANGED_EMAIL_CONFIRMATION": True,
@@ -173,7 +209,8 @@ DJOSER = {
     'SERIALIZERS': {
         'user_create': 'users.serializers.CreateUserSerializer',
         'user': "users.serializers.CreateUserSerializer",
-        'user_delete': "djoser.serializers.UserDeleteSerializer",      
+        'user_delete': "djoser.serializers.UserDeleteSerializer",
+        'token_create': 'users.serializers.CustomTokenCreateSerializer',  # Use custom serializer
     },
 }
 

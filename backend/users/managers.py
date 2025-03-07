@@ -3,9 +3,12 @@ from django.core.exceptions import ValidationError
 from django.core.validators import validate_email
 from django.utils.translation import gettext_lazy as _
 
+import logging
+
+# Get the logger for the 'users' app
+logger = logging.getLogger('users')
 
 class CustomUserManager(BaseUserManager):
-
     def email_validator(self, email):
         try:
             validate_email(email)
@@ -16,16 +19,24 @@ class CustomUserManager(BaseUserManager):
         if not username:
             raise ValueError(_("Users must submit a username"))
         
-        # Add any additional username validation logic here (e.g., allowed characters)
         if len(username) < 3:
             raise ValueError(_("Username must be at least 3 characters long"))
-        
-    def create_user(self, first_name, last_name, email, password, username=None, **extra_fields):
+
+    def create_user(self, first_name, last_name, email, password, username, profile_picture=None, **extra_fields):
+        """
+        Create and return a regular user with the provided details.
+        """
+        # Log the creation of a user
+        logger.debug(f"Creating user with email: {email}, username: {username}, profile_picture: {profile_picture}")
+
         if not first_name:
             raise ValueError(_("Users must submit a first name"))
         
         if not last_name:
             raise ValueError(_("Users must submit a last name"))
+        
+        if not username:
+            raise ValueError(_("Users must submit a username"))  # Ensure username is required
         
         if email:
             email = self.normalize_email(email)
@@ -33,15 +44,15 @@ class CustomUserManager(BaseUserManager):
         else:
             raise ValueError(_("Base User: Email address is required"))
         
-        # Make username validation optional
-        if username:
-            self.username_validator(username)
+        # Validate username
+        self.username_validator(username)
         
         user = self.model(
             first_name=first_name,
             last_name=last_name,
             email=email,
-            username=username,  # Allow None
+            username=username,  # Use the provided username
+            profile_picture=profile_picture,  # Allow optional profile picture
             **extra_fields
         )
 
@@ -51,10 +62,15 @@ class CustomUserManager(BaseUserManager):
 
         user.save(using=self._db)
 
+        # Log the created user
+        logger.debug(f"User created: {user}")
+
         return user
     
-    def create_superuser(self, first_name, last_name, email, username, password, **extra_fields):
-
+    def create_superuser(self, first_name, last_name, email, username, password, profile_picture=None, **extra_fields):
+        """
+        Create and return a superuser with the provided details.
+        """
         extra_fields.setdefault("is_staff", True)
         extra_fields.setdefault("is_superuser", True)
         extra_fields.setdefault("is_active", True)
@@ -77,8 +93,8 @@ class CustomUserManager(BaseUserManager):
         # Validate username
         self.username_validator(username)
 
-        user = self.create_user(first_name, last_name, email, username, password, **extra_fields)
+        user = self.create_user(first_name, last_name, email, password, username, profile_picture, **extra_fields)
 
-        user.save()   
+        user.save()
 
         return user
