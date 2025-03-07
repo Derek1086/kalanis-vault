@@ -31,7 +31,7 @@ const IconInputField: React.FC<IconInputFieldProps> = ({
         onChange={onChange}
         value={value}
         required={required}
-        className="pl-10 pr-3 py-2 w-full border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#c549d4] focus:border-[#c549d4]"
+        className="pl-10 pr-3 py-2 w-full border-2 border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#c549d4] focus:border-[#c549d4]"
       />
     </div>
   );

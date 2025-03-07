@@ -5,9 +5,7 @@ import { register, reset } from "../features/auth/authSlice";
 import { useNavigate, NavLink } from "react-router-dom";
 import { AppDispatch, RootState } from "../app/store";
 
-import { CiMail } from "react-icons/ci";
-import { CiUser } from "react-icons/ci";
-import { CiLock } from "react-icons/ci";
+import { CiMail, CiUser, CiLock } from "react-icons/ci";
 
 import Card from "../components/Container/Card";
 import Header from "../components/Text/Header";

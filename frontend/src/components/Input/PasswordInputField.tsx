@@ -1,6 +1,5 @@
 import React, { useState } from "react";
-import { FaEye } from "react-icons/fa";
-import { FaEyeSlash } from "react-icons/fa";
+import { FaEye, FaEyeSlash } from "react-icons/fa";
 
 interface PasswordInputFieldProps {
   placeholder?: string;
@@ -33,7 +32,7 @@ const PasswordInputField: React.FC<PasswordInputFieldProps> = ({
         onChange={onChange}
         value={value}
         required={required}
-        className="pl-10 pr-10 py-2 w-full border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#c549d4] focus:border-[#c549d4]"
+        className="pl-10 pr-10 py-2 w-full border-2 border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#c549d4] focus:border-[#c549d4]"
       />
       <div className="absolute inset-y-0 right-0 pr-3 flex items-center">
         <button

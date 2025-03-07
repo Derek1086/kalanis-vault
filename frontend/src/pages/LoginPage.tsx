@@ -5,8 +5,7 @@ import { login, reset, getUserInfo } from "../features/auth/authSlice";
 import { toast } from "react-toastify";
 import { AppDispatch, RootState } from "../app/store";
 
-import { CiAt } from "react-icons/ci";
-import { CiLock } from "react-icons/ci";
+import { CiAt, CiLock } from "react-icons/ci";
 
 import Card from "../components/Container/Card";
 import Header from "../components/Text/Header";
@@ -18,11 +17,11 @@ import PrimaryButton from "../components/Button/PrimaryButton";
 
 const LoginPage = () => {
   const [formData, setFormData] = useState({
-    email: "", // Change this from 'email' to 'email'
+    email: "",
     password: "",
   });
 
-  const { email, password } = formData; // Update this line
+  const { email, password } = formData;
 
   const dispatch = useDispatch<AppDispatch>();
   const navigate = useNavigate();
@@ -42,7 +41,7 @@ const LoginPage = () => {
     e.preventDefault();
 
     const userData = {
-      email, // Change this from 'email' to 'email'
+      email,
       password,
     };
     dispatch(login(userData));
@@ -97,7 +96,7 @@ const LoginPage = () => {
             </p>
           </div>
           <PrimaryButton type="submit">Log In</PrimaryButton>
-          <div className="relative flex items-center">
+          <div className="relative flex items-center mt-2">
             <div className="flex-grow border-t border-gray-300"></div>
             <span className="flex-shrink mx-4 text-gray-500 text-sm">or</span>
             <div className="flex-grow border-t border-gray-300"></div>

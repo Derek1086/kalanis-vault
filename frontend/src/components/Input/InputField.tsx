@@ -26,7 +26,7 @@ const InputField: React.FC<InputFieldProps> = ({
         onChange={onChange}
         value={value}
         required={required}
-        className="px-3 py-2 w-full border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#c549d4] focus:border-[#c549d4]"
+        className="px-3 py-2 w-full border-2 border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#c549d4] focus:border-[#c549d4]"
       />
     </div>
   );

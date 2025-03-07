@@ -4,6 +4,8 @@ import { useDispatch, useSelector } from "react-redux";
 import { logout, reset } from "../features/auth/authSlice.ts";
 import { AppDispatch, RootState } from "../app/store.tsx";
 
+import NavBar from "../components/Navigation/NavBar.tsx";
+
 interface LinkAnalysisResult {
   platform: "tiktok" | "instagram" | "unknown";
   url: string;
@@ -129,101 +131,188 @@ const HomePage = () => {
   };
 
   return (
-    <nav className="navbar">
-      <ul className="nav-links">
-        {user ? (
-          <>
-            <NavLink className="nav-childs" to="/login" onClick={handleLogout}>
-              Logout
-            </NavLink>
-            <div>
-              <h1>Welcome, {userInfo?.first_name}</h1>
-            </div>
-            <div className="">
-              <div className="mb-4">
-                <label
-                  htmlFor="url-input"
-                  className="block text-sm font-medium text-gray-700 mb-2"
-                >
-                  Video URL
-                </label>
-                <input
-                  id="url-input"
-                  type="text"
-                  placeholder="https://www.tiktok.com/... or https://www.instagram.com/..."
-                  className=""
-                  value={inputUrl}
-                  onChange={(e) => setInputUrl(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && handleAnalyzeLink()}
-                />
-              </div>
-              <button
-                onClick={handleAnalyzeLink}
-                disabled={isLoading || !inputUrl.trim()}
-                className={`w-full py-3 px-4 rounded-md font-medium text-white ${
-                  isLoading || !inputUrl.trim()
-                    ? "bg-gray-400 cursor-not-allowed"
-                    : "bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-                }`}
+    <>
+      <NavBar />
+      <nav className="navbar">
+        <ul className="nav-links">
+          {user ? (
+            <>
+              <NavLink
+                className="nav-childs"
+                to="/login"
+                onClick={handleLogout}
               >
-                {isLoading ? "Loading..." : "Embed Video"}
-              </button>
-            </div>
-
-            {error && <div className="text-red-600">{error}</div>}
-
-            {result && result.isValid && result.platform === "tiktok" && (
-              <div className="p-4 border rounded">
-                <h2 className="text-lg font-semibold">Detection Result:</h2>
-                <p>Platform: {result.platform}</p>
-                <p>URL: {result.url}</p>
-                {result.metadata?.author && (
-                  <p>Author: {result.metadata.author}</p>
-                )}
-                {result.metadata?.title && (
-                  <p>Title: {result.metadata.title}</p>
-                )}
-                {result.embedHtml && (
-                  <>
-                    <blockquote
-                      className="tiktok-embed"
-                      cite={result.url}
-                      data-video-id={new URL(result.url).pathname
-                        .split("/")
-                        .pop()}
-                      style={{ maxWidth: "605px", minWidth: "325px" }}
-                    >
-                      <section>
-                        <a
-                          target="_blank"
-                          title={`@${result.metadata?.author}`}
-                          href={
-                            result.metadata?.author
-                              ? `https://www.tiktok.com/@${result.metadata.author}?refer=embed`
-                              : "#"
-                          }
-                        >
-                          @{result.metadata?.author}
-                        </a>
-                        {result.metadata?.title && (
-                          <p>{result.metadata.title}</p>
-                        )}
-                      </section>
-                    </blockquote>
-                    <script
-                      async
-                      src="https://www.tiktok.com/embed.js"
-                    ></script>
-                  </>
-                )}
+                Logout
+              </NavLink>
+              <div>
+                <h1>Welcome, {userInfo?.first_name}</h1>
               </div>
-            )}
-          </>
-        ) : (
-          <>Home</>
-        )}
-      </ul>
-    </nav>
+              <div className="">
+                <div className="mb-4">
+                  <label
+                    htmlFor="url-input"
+                    className="block text-sm font-medium text-gray-700 mb-2"
+                  >
+                    Video URL
+                  </label>
+                  <input
+                    id="url-input"
+                    type="text"
+                    placeholder="https://www.tiktok.com/... or https://www.instagram.com/..."
+                    className=""
+                    value={inputUrl}
+                    onChange={(e) => setInputUrl(e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && handleAnalyzeLink()}
+                  />
+                </div>
+                <button
+                  onClick={handleAnalyzeLink}
+                  disabled={isLoading || !inputUrl.trim()}
+                  className={`w-full py-3 px-4 rounded-md font-medium text-white ${
+                    isLoading || !inputUrl.trim()
+                      ? "bg-gray-400 cursor-not-allowed"
+                      : "bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                  }`}
+                >
+                  {isLoading ? "Loading..." : "Embed Video"}
+                </button>
+              </div>
+
+              {error && <div className="text-red-600">{error}</div>}
+
+              {result && result.isValid && result.platform === "tiktok" && (
+                <div className="p-4 border rounded">
+                  <h2 className="text-lg font-semibold">Detection Result:</h2>
+                  <p>Platform: {result.platform}</p>
+                  <p>URL: {result.url}</p>
+                  {result.metadata?.author && (
+                    <p>Author: {result.metadata.author}</p>
+                  )}
+                  {result.metadata?.title && (
+                    <p>Title: {result.metadata.title}</p>
+                  )}
+                  {result.embedHtml && (
+                    <>
+                      <blockquote
+                        className="tiktok-embed"
+                        cite={result.url}
+                        data-video-id={new URL(result.url).pathname
+                          .split("/")
+                          .pop()}
+                        style={{ maxWidth: "605px", minWidth: "325px" }}
+                      >
+                        <section>
+                          <a
+                            target="_blank"
+                            title={`@${result.metadata?.author}`}
+                            href={
+                              result.metadata?.author
+                                ? `https://www.tiktok.com/@${result.metadata.author}?refer=embed`
+                                : "#"
+                            }
+                          >
+                            @{result.metadata?.author}
+                          </a>
+                          {result.metadata?.title && (
+                            <p>{result.metadata.title}</p>
+                          )}
+                        </section>
+                      </blockquote>
+                      <script
+                        async
+                        src="https://www.tiktok.com/embed.js"
+                      ></script>
+                    </>
+                  )}
+                </div>
+              )}
+            </>
+          ) : (
+            <>
+              <div className="">
+                <div className="mb-4">
+                  <label
+                    htmlFor="url-input"
+                    className="block text-sm font-medium text-gray-700 mb-2"
+                  >
+                    Video URL
+                  </label>
+                  <input
+                    id="url-input"
+                    type="text"
+                    placeholder="https://www.tiktok.com/... or https://www.instagram.com/..."
+                    className=""
+                    value={inputUrl}
+                    onChange={(e) => setInputUrl(e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && handleAnalyzeLink()}
+                  />
+                </div>
+                <button
+                  onClick={handleAnalyzeLink}
+                  disabled={isLoading || !inputUrl.trim()}
+                  className={`w-full py-3 px-4 rounded-md font-medium text-white ${
+                    isLoading || !inputUrl.trim()
+                      ? "bg-gray-400 cursor-not-allowed"
+                      : "bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                  }`}
+                >
+                  {isLoading ? "Loading..." : "Embed Video"}
+                </button>
+              </div>
+
+              {error && <div className="text-red-600">{error}</div>}
+
+              {result && result.isValid && result.platform === "tiktok" && (
+                <div className="p-4 border rounded">
+                  <h2 className="text-lg font-semibold">Detection Result:</h2>
+                  <p>Platform: {result.platform}</p>
+                  <p>URL: {result.url}</p>
+                  {result.metadata?.author && (
+                    <p>Author: {result.metadata.author}</p>
+                  )}
+                  {result.metadata?.title && (
+                    <p>Title: {result.metadata.title}</p>
+                  )}
+                  {result.embedHtml && (
+                    <>
+                      <blockquote
+                        className="tiktok-embed"
+                        cite={result.url}
+                        data-video-id={new URL(result.url).pathname
+                          .split("/")
+                          .pop()}
+                        style={{ maxWidth: "605px", minWidth: "325px" }}
+                      >
+                        <section>
+                          <a
+                            target="_blank"
+                            title={`@${result.metadata?.author}`}
+                            href={
+                              result.metadata?.author
+                                ? `https://www.tiktok.com/@${result.metadata.author}?refer=embed`
+                                : "#"
+                            }
+                          >
+                            @{result.metadata?.author}
+                          </a>
+                          {result.metadata?.title && (
+                            <p>{result.metadata.title}</p>
+                          )}
+                        </section>
+                      </blockquote>
+                      <script
+                        async
+                        src="https://www.tiktok.com/embed.js"
+                      ></script>
+                    </>
+                  )}
+                </div>
+              )}
+            </>
+          )}
+        </ul>
+      </nav>
+    </>
   );
 };
 
