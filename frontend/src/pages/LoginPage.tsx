@@ -6,6 +6,7 @@ import { toast } from "react-toastify";
 import { AppDispatch, RootState } from "../app/store";
 
 import { CiAt, CiLock } from "react-icons/ci";
+import { AiOutlineLoading3Quarters } from "react-icons/ai";
 
 import Card from "../components/Container/Card";
 import Header from "../components/Text/Header";
@@ -20,6 +21,8 @@ const LoginPage = () => {
     email: "",
     password: "",
   });
+
+  const [isLoading, setIsLoading] = useState(false);
 
   const { email, password } = formData;
 
@@ -39,6 +42,7 @@ const LoginPage = () => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    setIsLoading(true);
 
     const userData = {
       email,
@@ -50,6 +54,7 @@ const LoginPage = () => {
   useEffect(() => {
     if (isError) {
       toast.error(message);
+      setIsLoading(false);
     }
 
     if (isSuccess && user) {
@@ -58,6 +63,7 @@ const LoginPage = () => {
     }
 
     dispatch(reset());
+    setIsLoading(false);
   }, [isError, isSuccess, user, navigate, dispatch, message]);
 
   return (
@@ -75,6 +81,7 @@ const LoginPage = () => {
             onChange={handleChange}
             value={email}
             required
+            autoFocus={true}
             icon={<CiAt className="h-5 w-5 text-gray-400" />}
           />
           <PasswordInputField
@@ -95,7 +102,13 @@ const LoginPage = () => {
               </NavLink>
             </p>
           </div>
-          <PrimaryButton type="submit">Log In</PrimaryButton>
+          <PrimaryButton type="submit" disabled={isLoading}>
+            {isLoading ? (
+              <AiOutlineLoading3Quarters className="animate-spin h-5 w-5" />
+            ) : (
+              "Log In"
+            )}
+          </PrimaryButton>
           <div className="relative flex items-center mt-2">
             <div className="flex-grow border-t border-gray-300"></div>
             <span className="flex-shrink mx-4 text-gray-500 text-sm">or</span>

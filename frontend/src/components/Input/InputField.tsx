@@ -7,6 +7,7 @@ interface InputFieldProps {
   onChange: React.ChangeEventHandler<HTMLInputElement>;
   value: string;
   required?: boolean;
+  autoFocus?: boolean;
 }
 
 const InputField: React.FC<InputFieldProps> = ({
@@ -16,6 +17,7 @@ const InputField: React.FC<InputFieldProps> = ({
   onChange,
   value,
   required = false,
+  autoFocus = false,
 }) => {
   return (
     <div className="relative flex-1">
@@ -26,6 +28,7 @@ const InputField: React.FC<InputFieldProps> = ({
         onChange={onChange}
         value={value}
         required={required}
+        autoFocus={autoFocus}
         className="px-3 py-2 w-full border-2 border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#c549d4] focus:border-[#c549d4]"
       />
     </div>

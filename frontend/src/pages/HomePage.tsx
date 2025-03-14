@@ -1,8 +1,6 @@
 import { useState } from "react";
-import { NavLink, useNavigate } from "react-router-dom";
-import { useDispatch, useSelector } from "react-redux";
-import { logout, reset } from "../features/auth/authSlice.ts";
-import { AppDispatch, RootState } from "../app/store.tsx";
+import { useSelector } from "react-redux";
+import { RootState } from "../app/store.tsx";
 
 import NavBar from "../components/Navigation/NavBar.tsx";
 
@@ -36,16 +34,7 @@ interface TikTokOEmbedResponse {
 }
 
 const HomePage = () => {
-  const navigate = useNavigate();
-  const dispatch = useDispatch<AppDispatch>();
-
   const { user, userInfo } = useSelector((state: RootState) => state.auth);
-
-  const handleLogout = () => {
-    dispatch(logout());
-    dispatch(reset());
-    navigate("/");
-  };
 
   const [inputUrl, setInputUrl] = useState<string>("");
   const [result, setResult] = useState<LinkAnalysisResult | null>(null);
@@ -137,13 +126,6 @@ const HomePage = () => {
         <ul className="nav-links">
           {user ? (
             <>
-              <NavLink
-                className="nav-childs"
-                to="/login"
-                onClick={handleLogout}
-              >
-                Logout
-              </NavLink>
               <div>
                 <h1>Welcome, {userInfo?.first_name}</h1>
               </div>
