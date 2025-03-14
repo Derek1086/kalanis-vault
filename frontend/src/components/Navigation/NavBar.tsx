@@ -6,7 +6,6 @@ import { logout, reset } from "../../features/auth/authSlice";
 
 import { CiBellOn, CiBoxList, CiUser } from "react-icons/ci";
 import { IoHomeOutline, IoSearch } from "react-icons/io5";
-import { IoMdArrowDropdown } from "react-icons/io";
 
 import SearchField from "../Input/SearchField";
 import IconButton from "../Button/IconButton";
@@ -19,7 +18,7 @@ const NavBar = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch<AppDispatch>();
 
-  const { user, userInfo } = useSelector((state: RootState) => state.auth);
+  const { user } = useSelector((state: RootState) => state.auth);
 
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchQuery(e.target.value);

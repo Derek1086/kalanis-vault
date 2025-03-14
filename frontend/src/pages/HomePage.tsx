@@ -1,7 +1,7 @@
-import { useState } from "react";
-import { useSelector } from "react-redux";
+import { useState, useEffect } from "react";
+import { useSelector, useDispatch } from "react-redux";
 import { RootState } from "../app/store.tsx";
-
+import { getUserInfo } from "../features/auth/authSlice";
 import NavBar from "../components/Navigation/NavBar.tsx";
 
 interface LinkAnalysisResult {
@@ -34,12 +34,20 @@ interface TikTokOEmbedResponse {
 }
 
 const HomePage = () => {
+  const dispatch = useDispatch();
   const { user, userInfo } = useSelector((state: RootState) => state.auth);
 
   const [inputUrl, setInputUrl] = useState<string>("");
   const [result, setResult] = useState<LinkAnalysisResult | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Fetch user info when component mounts if it's not already available
+  useEffect(() => {
+    if (user && Object.keys(userInfo || {}).length === 0) {
+      dispatch(getUserInfo() as any);
+    }
+  }, [user, userInfo, dispatch]);
 
   const detectPlatform = (url: string): LinkAnalysisResult => {
     try {
@@ -127,7 +135,7 @@ const HomePage = () => {
           {user ? (
             <>
               <div>
-                <h1>Welcome, {userInfo?.first_name}</h1>
+                <h1>Welcome, {userInfo?.first_name || "User"}</h1>
               </div>
               <div className="">
                 <div className="mb-4">
