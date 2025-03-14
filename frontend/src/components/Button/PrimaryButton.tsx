@@ -8,7 +8,7 @@ interface PrimaryButtonProps {
   onClick?: () => void;
 }
 
-const PrimaryButton: React.FC<PrimaryButtonProps> = ({
+export const PrimaryButton: React.FC<PrimaryButtonProps> = ({
   type,
   className = "",
   disabled = false,
@@ -26,5 +26,3 @@ const PrimaryButton: React.FC<PrimaryButtonProps> = ({
     </button>
   );
 };
-
-export default PrimaryButton;

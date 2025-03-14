@@ -5,11 +5,9 @@ interface SecondaryTextProps {
   className?: string;
 }
 
-const SecondaryText: React.FC<SecondaryTextProps> = ({
+export const SecondaryText: React.FC<SecondaryTextProps> = ({
   text,
   className = "",
 }) => {
   return <p className={`text-sm ${className}`}>{text}</p>;
 };
-
-export default SecondaryText;

@@ -10,7 +10,7 @@ interface InputFieldProps {
   autoFocus?: boolean;
 }
 
-const InputField: React.FC<InputFieldProps> = ({
+export const InputField: React.FC<InputFieldProps> = ({
   type,
   placeholder,
   name,
@@ -34,5 +34,3 @@ const InputField: React.FC<InputFieldProps> = ({
     </div>
   );
 };
-
-export default InputField;

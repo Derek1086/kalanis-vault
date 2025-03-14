@@ -2,10 +2,9 @@ import { useNavigate } from "react-router-dom";
 
 import { IoHomeOutline } from "react-icons/io5";
 
-import Card from "../components/Container/Card";
-import Header from "../components/Text/Header";
-import PrimaryIconButton from "../components/Button/PrimaryIconButton";
-import SecondaryText from "../components/Text/SecondaryText";
+import { Card } from "../components/Container";
+import { Header, SecondaryText } from "../components/Text";
+import { PrimaryIconButton } from "../components/Button";
 
 const NotFoundPage = () => {
   const navigate = useNavigate();

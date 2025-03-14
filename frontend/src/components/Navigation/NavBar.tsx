@@ -7,8 +7,8 @@ import { logout, reset } from "../../features/auth/authSlice";
 import { CiBellOn, CiBoxList, CiUser } from "react-icons/ci";
 import { IoHomeOutline, IoSearch } from "react-icons/io5";
 
-import SearchField from "../Input/SearchField";
-import IconButton from "../Button/IconButton";
+import { SearchField } from "../Input";
+import { IconButton } from "../Button";
 
 const NavBar = () => {
   const [searchQuery, setSearchQuery] = useState("");

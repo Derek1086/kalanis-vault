@@ -7,7 +7,7 @@ interface SecondaryButtonProps {
   onClick?: () => void;
 }
 
-const SecondaryButton: React.FC<SecondaryButtonProps> = ({
+export const SecondaryButton: React.FC<SecondaryButtonProps> = ({
   type,
   className = "",
   children,
@@ -23,5 +23,3 @@ const SecondaryButton: React.FC<SecondaryButtonProps> = ({
     </button>
   );
 };
-
-export default SecondaryButton;

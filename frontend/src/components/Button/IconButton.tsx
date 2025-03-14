@@ -5,7 +5,7 @@ interface IconButtonProps {
   onClick?: () => void;
 }
 
-const IconButton: React.FC<IconButtonProps> = ({ icon, onClick }) => {
+export const IconButton: React.FC<IconButtonProps> = ({ icon, onClick }) => {
   return (
     <button
       onClick={onClick}
@@ -15,5 +15,3 @@ const IconButton: React.FC<IconButtonProps> = ({ icon, onClick }) => {
     </button>
   );
 };
-
-export default IconButton;

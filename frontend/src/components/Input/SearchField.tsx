@@ -12,7 +12,7 @@ interface SearchFieldProps {
   onClear?: () => void; // New prop for clearing the input
 }
 
-const SearchField: React.FC<SearchFieldProps> = ({
+export const SearchField: React.FC<SearchFieldProps> = ({
   type,
   placeholder,
   name,
@@ -46,5 +46,3 @@ const SearchField: React.FC<SearchFieldProps> = ({
     </div>
   );
 };
-
-export default SearchField;

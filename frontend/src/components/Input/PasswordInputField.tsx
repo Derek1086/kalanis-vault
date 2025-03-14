@@ -10,7 +10,7 @@ interface PasswordInputFieldProps {
   icon: React.ReactNode;
 }
 
-const PasswordInputField: React.FC<PasswordInputFieldProps> = ({
+export const PasswordInputField: React.FC<PasswordInputFieldProps> = ({
   placeholder = "Password",
   name,
   onChange,
@@ -50,5 +50,3 @@ const PasswordInputField: React.FC<PasswordInputFieldProps> = ({
     </div>
   );
 };
-
-export default PasswordInputField;

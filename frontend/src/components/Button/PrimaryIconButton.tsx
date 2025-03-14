@@ -9,7 +9,7 @@ interface PrimaryIconButtonProps {
   onClick?: () => void;
 }
 
-const PrimaryIconButton: React.FC<PrimaryIconButtonProps> = ({
+export const PrimaryIconButton: React.FC<PrimaryIconButtonProps> = ({
   type,
   className = "",
   disabled = false,
@@ -29,5 +29,3 @@ const PrimaryIconButton: React.FC<PrimaryIconButtonProps> = ({
     </button>
   );
 };
-
-export default PrimaryIconButton;

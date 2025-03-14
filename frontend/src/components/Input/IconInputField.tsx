@@ -11,7 +11,7 @@ interface IconInputFieldProps {
   icon: React.ReactNode;
 }
 
-const IconInputField: React.FC<IconInputFieldProps> = ({
+export const IconInputField: React.FC<IconInputFieldProps> = ({
   type,
   placeholder,
   name,
@@ -39,5 +39,3 @@ const IconInputField: React.FC<IconInputFieldProps> = ({
     </div>
   );
 };
-
-export default IconInputField;

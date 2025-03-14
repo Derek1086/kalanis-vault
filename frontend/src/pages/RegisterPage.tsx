@@ -8,14 +8,14 @@ import { AppDispatch, RootState } from "../app/store";
 import { CiMail, CiUser, CiLock } from "react-icons/ci";
 import { AiOutlineLoading3Quarters } from "react-icons/ai";
 
-import Card from "../components/Container/Card";
-import Header from "../components/Text/Header";
-import Subtitle from "../components/Text/Subtitle";
-import SecondaryText from "../components/Text/SecondaryText";
-import InputField from "../components/Input/InputField";
-import IconInputField from "../components/Input/IconInputField";
-import PasswordInputField from "../components/Input/PasswordInputField";
-import PrimaryButton from "../components/Button/PrimaryButton";
+import { Card } from "../components/Container";
+import { Header, Subtitle, SecondaryText } from "../components/Text";
+import {
+  InputField,
+  IconInputField,
+  PasswordInputField,
+} from "../components/Input";
+import { PrimaryButton } from "../components/Button";
 
 const RegisterPage = () => {
   const [formData, setFormData] = useState({

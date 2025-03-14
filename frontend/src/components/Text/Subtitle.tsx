@@ -4,8 +4,6 @@ interface SubtitleProps {
   text: string;
 }
 
-const Subtitle: React.FC<SubtitleProps> = ({ text }) => {
+export const Subtitle: React.FC<SubtitleProps> = ({ text }) => {
   return <p className="text-sm text-center">{text}</p>;
 };
-
-export default Subtitle;

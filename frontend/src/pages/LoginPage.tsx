@@ -8,13 +8,10 @@ import { AppDispatch, RootState } from "../app/store";
 import { CiAt, CiLock } from "react-icons/ci";
 import { AiOutlineLoading3Quarters } from "react-icons/ai";
 
-import Card from "../components/Container/Card";
-import Header from "../components/Text/Header";
-import Subtitle from "../components/Text/Subtitle";
-import SecondaryButton from "../components/Button/SecondaryButton";
-import IconInputField from "../components/Input/IconInputField";
-import PasswordInputField from "../components/Input/PasswordInputField";
-import PrimaryButton from "../components/Button/PrimaryButton";
+import { Card } from "../components/Container";
+import { Header, Subtitle } from "../components/Text";
+import { PrimaryButton, SecondaryButton } from "../components/Button";
+import { IconInputField, PasswordInputField } from "../components/Input";
 
 const LoginPage = () => {
   const [formData, setFormData] = useState({
