@@ -74,7 +74,11 @@ const NavBar = () => {
     <nav className="bg-[#151316] shadow-md px-6 py-4">
       <div className="mx-[50px] flex items-center justify-between">
         <div className="flex items-center space-x-2">
-          <span className="text-2xl font-bold text-white">Kalani's Vault</span>
+          <Link to="/">
+            <span className="text-2xl font-bold text-white">
+              Kalani's Vault
+            </span>
+          </Link>
         </div>
         <div className="relative flex items-center flex-grow max-w-md">
           <SearchField

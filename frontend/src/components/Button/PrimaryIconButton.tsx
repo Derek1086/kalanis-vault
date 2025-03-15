@@ -10,7 +10,7 @@ interface PrimaryIconButtonProps {
   disabled?: boolean;
   children: React.ReactNode;
   icon: React.ReactNode;
-  onClick?: () => void;
+  onClick?: (e: React.MouseEvent<HTMLButtonElement>) => void;
 }
 
 export const PrimaryIconButton: React.FC<PrimaryIconButtonProps> = ({

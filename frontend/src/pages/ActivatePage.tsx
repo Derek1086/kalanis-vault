@@ -4,14 +4,19 @@ import { useDispatch, useSelector } from "react-redux";
 import { activate, reset } from "../features/auth/authSlice";
 import { toast } from "react-toastify";
 import { AppDispatch, RootState } from "../app/store";
-//import Spinner from '../components/Spinner'
+
+import { Card } from "../components/Container";
+import { Header, SecondaryText } from "../components/Typography";
+import { PrimaryIconButton } from "../components/Button";
+
+import { CiCircleCheck } from "react-icons/ci";
 
 const ActivatePage = () => {
   const { uid, token } = useParams();
   const dispatch = useDispatch<AppDispatch>();
   const navigate = useNavigate();
 
-  const { isLoading, isError, isSuccess, message } = useSelector(
+  const { isError, isSuccess, message } = useSelector(
     (state: RootState) => state.auth
   );
 
@@ -39,21 +44,22 @@ const ActivatePage = () => {
   }, [isError, isSuccess, navigate, dispatch, message]);
 
   return (
-    <div>
-      <div className="container auth__container">
-        <h1 className="main__title">Activate Account</h1>
-
-        {isLoading && <p>Loading...</p>}
-
-        <button
-          className="btn btn-accent btn-activate-account"
+    <Card>
+      <div className="flex flex-col items-center mb-6">
+        <Header text="Activate Account" />
+        <SecondaryText
+          text="Press the button below to activate your account."
+          className="text-gray-400 mb-4 mt-4"
+        />
+        <PrimaryIconButton
           type="button"
+          icon={<CiCircleCheck className="h-4 w-4" />}
           onClick={handleSubmit}
         >
           Activate Account
-        </button>
+        </PrimaryIconButton>
       </div>
-    </div>
+    </Card>
   );
 };
 

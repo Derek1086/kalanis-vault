@@ -99,7 +99,7 @@ const RegisterPage = () => {
     }
 
     if (isSuccess || user) {
-      navigate("/");
+      navigate("/login");
       toast.success(
         "An activation email has been sent to your email. Please check your email."
       );
