@@ -3,9 +3,15 @@ import { useNavigate } from "react-router-dom";
 import { IoHomeOutline } from "react-icons/io5";
 
 import { Card } from "../components/Container";
-import { Header, SecondaryText } from "../components/Text";
+import { Header, SecondaryText } from "../components/Typography";
 import { PrimaryIconButton } from "../components/Button";
 
+/**
+ * NotFoundPage Component
+ *
+ * Displays a 404 error page when users navigate to non-existent routes.
+ * Provides a button to return to the home page.
+ */
 const NotFoundPage = () => {
   const navigate = useNavigate();
 

@@ -1,3 +1,7 @@
+/**
+ * Input field with an icon displayed to the left.
+ * Provides visual context about the input's purpose.
+ */
 import React from "react";
 
 interface IconInputFieldProps {

@@ -1,3 +1,7 @@
+/**
+ * Password input field with show/hide toggle functionality.
+ * Includes an icon on the left and a toggle button on the right.
+ */
 import React, { useState } from "react";
 import { FaEye, FaEyeSlash } from "react-icons/fa";
 

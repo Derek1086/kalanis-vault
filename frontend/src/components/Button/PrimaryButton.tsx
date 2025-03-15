@@ -1,3 +1,7 @@
+/**
+ * Primary button component with the main brand color.
+ * Used for primary actions and call-to-actions throughout the application.
+ */
 import React from "react";
 
 interface PrimaryButtonProps {

@@ -1,3 +1,7 @@
+/**
+ * Primary button with an icon component.
+ * Extends the primary button with an icon displayed alongside text.
+ */
 import React from "react";
 
 interface PrimaryIconButtonProps {

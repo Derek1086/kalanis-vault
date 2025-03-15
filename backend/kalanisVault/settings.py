@@ -17,7 +17,6 @@ import os
 
 env = environ.Env(DEBUG=(bool, False))
 
-# Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 environ.Env.read_env(BASE_DIR / '.env')
 
@@ -69,7 +68,6 @@ CORS_ALLOWED_ORIGINS = [
 ]
 
 # Application definition
-
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
@@ -194,8 +192,7 @@ SIMPLE_JWT = {
 }
 
 DJOSER = {
-    'LOGIN_FIELD': 'email',  # Default login field
-    'LOGIN_FIELDS': ['email', 'username'],  # Allow login with email or username
+    'LOGIN_FIELD': 'email', 
     "USER_CREATE_PASSWORD_RETYPE": True,
     "USERNAME_CHANGED_EMAIL_CONFIRMATION": True,
     "PASSWORD_CHANGED_EMAIL_CONFIRMATION": True,
@@ -210,12 +207,12 @@ DJOSER = {
         'user_create': 'users.serializers.CreateUserSerializer',
         'user': "users.serializers.CreateUserSerializer",
         'user_delete': "djoser.serializers.UserDeleteSerializer",
-        'token_create': 'users.serializers.CustomTokenCreateSerializer',  # Use custom serializer
+        'token_create': 'users.serializers.CustomTokenCreateSerializer',
     },
 }
 
 AUTHENTICATION_BACKENDS = [
-    'users.backends.EmailOrUsernameModelBackend',
+    'users.backends.EmailModelBackend',
     'django.contrib.auth.backends.ModelBackend',
 ]
 

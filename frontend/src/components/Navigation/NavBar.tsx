@@ -10,6 +10,14 @@ import { IoHomeOutline, IoSearch } from "react-icons/io5";
 import { SearchField } from "../Input";
 import { IconButton } from "../Button";
 
+/**
+ * Navigation bar component that displays a search field and user controls.
+ * Handles user authentication state and provides navigation functionality.
+ * Features:
+ * - Search functionality
+ * - User dropdown menu with logout option
+ * - Responsive design
+ */
 const NavBar = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -20,10 +28,20 @@ const NavBar = () => {
 
   const { user } = useSelector((state: RootState) => state.auth);
 
+  /**
+   * Updates the search query state when the search input changes
+   */
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchQuery(e.target.value);
   };
 
+  /**
+   * Handles user logout process:
+   * 1. Dispatches logout action
+   * 2. Resets auth state
+   * 3. Navigates to home page
+   * 4. Closes dropdown menu
+   */
   const handleLogout = () => {
     dispatch(logout());
     dispatch(reset());
@@ -31,7 +49,10 @@ const NavBar = () => {
     setDropdownOpen(false);
   };
 
-  // Close dropdown when clicking outside
+  /**
+   * Effect to close dropdown menu when clicking outside
+   * Sets up event listener for clicks outside the dropdown reference
+   */
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (

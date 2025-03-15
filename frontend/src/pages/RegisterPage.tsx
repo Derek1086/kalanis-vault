@@ -9,7 +9,7 @@ import { CiMail, CiUser, CiLock } from "react-icons/ci";
 import { AiOutlineLoading3Quarters } from "react-icons/ai";
 
 import { Card } from "../components/Container";
-import { Header, Subtitle, SecondaryText } from "../components/Text";
+import { Header, Subtitle, SecondaryText } from "../components/Typography";
 import {
   InputField,
   IconInputField,
@@ -17,7 +17,14 @@ import {
 } from "../components/Input";
 import { PrimaryButton } from "../components/Button";
 
+/**
+ * RegisterPage Component
+ *
+ * Handles new user registration with a form for account creation.
+ * Validates form inputs, dispatches registration action, and handles responses.
+ */
 const RegisterPage = () => {
+  // Form state with all required registration fields
   const [formData, setFormData] = useState({
     first_name: "",
     last_name: "",
@@ -35,10 +42,14 @@ const RegisterPage = () => {
   const dispatch = useDispatch<AppDispatch>();
   const navigate = useNavigate();
 
+  // Get authentication state from Redux store
   const { user, isError, isSuccess, message } = useSelector(
     (state: RootState) => state.auth
   );
 
+  /**
+   * Updates form state when input values change
+   */
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData((prev) => ({
       ...prev,
@@ -46,6 +57,12 @@ const RegisterPage = () => {
     }));
   };
 
+  /**
+   * Handles form submission with client-side validation
+   * - Validates password match
+   * - Ensures username is provided
+   * - Dispatches register action if validation passes
+   */
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
@@ -69,6 +86,12 @@ const RegisterPage = () => {
     }
   };
 
+  /**
+   * Side effect to handle registration results
+   * - Shows error notifications
+   * - Redirects and shows success message on successful registration
+   * - Resets auth state after handling
+   */
   useEffect(() => {
     if (isError) {
       toast.error(message);

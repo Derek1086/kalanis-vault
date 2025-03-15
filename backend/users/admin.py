@@ -1,4 +1,7 @@
-# admin.py
+"""
+This module configures the Django admin interface for the custom User model.
+It defines how User objects are displayed, filtered, and edited in the admin panel.
+"""
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from .forms import CustomUserChangeForm, CustomUserCreationForm
@@ -6,6 +9,11 @@ from django.utils.translation import gettext_lazy as _
 from .models import User
 
 class UserAdmin(BaseUserAdmin):
+    """
+    Custom UserAdmin class that extends Django's BaseUserAdmin.
+    Customizes the admin interface for our User model with appropriate
+    display fields, filtering options, and form layouts.
+    """
     ordering = ["email"]
     add_form = CustomUserCreationForm
     form = CustomUserChangeForm

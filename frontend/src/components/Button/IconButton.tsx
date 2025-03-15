@@ -1,3 +1,7 @@
+/**
+ * A simple icon button component with hover state.
+ * Used for interface actions represented by icons.
+ */
 import React from "react";
 
 interface IconButtonProps {

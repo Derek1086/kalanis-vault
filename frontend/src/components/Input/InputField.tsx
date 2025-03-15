@@ -1,3 +1,7 @@
+/**
+ * Standard input field without additional elements.
+ * Base component for text input throughout the application.
+ */
 import React from "react";
 
 interface InputFieldProps {

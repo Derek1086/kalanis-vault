@@ -4,6 +4,10 @@ import { RootState } from "../app/store.tsx";
 import { getUserInfo } from "../features/auth/authSlice";
 import NavBar from "../components/Navigation/NavBar.tsx";
 
+/**
+ * Interface for the result of a social media link analysis
+ * Stores platform type, validity status, and embed data
+ */
 interface LinkAnalysisResult {
   platform: "tiktok" | "instagram" | "unknown";
   url: string;
@@ -16,6 +20,10 @@ interface LinkAnalysisResult {
   };
 }
 
+/**
+ * Interface for TikTok oEmbed API response
+ * Contains all the data returned by TikTok's oEmbed endpoint
+ */
 interface TikTokOEmbedResponse {
   version: string;
   type: string;
@@ -33,6 +41,11 @@ interface TikTokOEmbedResponse {
   author_unique_id: string;
 }
 
+/**
+ * HomePage Component
+ * Main entry point for the application that handles social media link embedding
+ * Supports TikTok and Instagram URL detection and embedding (TikTok only implemented)
+ */
 const HomePage = () => {
   const dispatch = useDispatch();
   const { user, userInfo } = useSelector((state: RootState) => state.auth);
@@ -49,6 +62,12 @@ const HomePage = () => {
     }
   }, [user, userInfo, dispatch]);
 
+  /**
+   * Detects which social media platform a URL belongs to
+   * Currently supports TikTok and Instagram
+   * @param url The URL to analyze
+   * @returns LinkAnalysisResult with platform and validity info
+   */
   const detectPlatform = (url: string): LinkAnalysisResult => {
     try {
       const urlObj = new URL(url);
@@ -68,6 +87,11 @@ const HomePage = () => {
     }
   };
 
+  /**
+   * Fetches embed data from TikTok's oEmbed API
+   * @param url The TikTok video URL
+   * @returns Promise resolving to TikTok's oEmbed response
+   */
   const fetchTikTokEmbed = async (
     url: string
   ): Promise<TikTokOEmbedResponse> => {
@@ -86,6 +110,10 @@ const HomePage = () => {
     }
   };
 
+  /**
+   * Main handler for analyzing and embedding social media links
+   * Detects platform and fetches embed data if available
+   */
   const handleAnalyzeLink = async () => {
     if (!inputUrl.trim()) return;
 
@@ -170,6 +198,7 @@ const HomePage = () => {
 
               {error && <div className="text-red-600">{error}</div>}
 
+              {/* TikTok Embed Display Section */}
               {result && result.isValid && result.platform === "tiktok" && (
                 <div className="p-4 border rounded">
                   <h2 className="text-lg font-semibold">Detection Result:</h2>
@@ -219,6 +248,7 @@ const HomePage = () => {
             </>
           ) : (
             <>
+              {/* Guest User View - Same functionality but without personalized greeting */}
               <div className="">
                 <div className="mb-4">
                   <label
@@ -252,6 +282,7 @@ const HomePage = () => {
 
               {error && <div className="text-red-600">{error}</div>}
 
+              {/* TikTok Embed Display Section for Guest */}
               {result && result.isValid && result.platform === "tiktok" && (
                 <div className="p-4 border rounded">
                   <h2 className="text-lg font-semibold">Detection Result:</h2>

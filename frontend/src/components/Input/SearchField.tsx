@@ -1,3 +1,7 @@
+/**
+ * Search input field with icon and clear button.
+ * Used for search functionality throughout the application.
+ */
 import React from "react";
 import { MdClear } from "react-icons/md";
 
@@ -9,7 +13,7 @@ interface SearchFieldProps {
   value: string;
   icon: React.ReactNode;
   className?: string;
-  onClear?: () => void; // New prop for clearing the input
+  onClear?: () => void;
 }
 
 export const SearchField: React.FC<SearchFieldProps> = ({

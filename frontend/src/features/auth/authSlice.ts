@@ -1,12 +1,12 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import authService from "./authService";
 
-// Define proper types for your user data
+// Interface defining the User type
 interface User {
   access?: string;
-  // Add other user properties as needed
 }
 
+// Main state interface for the auth slice
 interface AuthState {
   user: User | null;
   userInfo: any;
@@ -16,6 +16,7 @@ interface AuthState {
   message: string;
 }
 
+// Initialize user from localStorage if available
 const storedUser = localStorage.getItem("user");
 const user = storedUser ? JSON.parse(storedUser) : null;
 
@@ -28,6 +29,7 @@ const initialState: AuthState = {
   message: "",
 };
 
+// Interface for user registration data
 interface RegisterUserData {
   first_name: string;
   last_name: string;
@@ -37,6 +39,10 @@ interface RegisterUserData {
   re_password: string;
 }
 
+/**
+ * Async thunk for user registration
+ * Handles the API call and error handling for registration
+ */
 export const register = createAsyncThunk(
   "auth/register",
   async (userData: RegisterUserData, thunkAPI) => {
@@ -55,10 +61,15 @@ export const register = createAsyncThunk(
   }
 );
 
+/**
+ * Async thunk for user login
+ * Manages authentication and token storage
+ */
 export const login = createAsyncThunk(
   "auth/login",
   async (userData: any, thunkAPI) => {
     try {
+      console.log(userData);
       return await authService.login(userData);
     } catch (error: any) {
       const message =
@@ -73,12 +84,19 @@ export const login = createAsyncThunk(
   }
 );
 
-// Fix the logout thunk to return a value
+/**
+ * Async thunk for user logout
+ * Removes auth tokens and clears state
+ */
 export const logout = createAsyncThunk("auth/logout", async () => {
   await authService.logout();
-  return null; // Return a value
+  return null;
 });
 
+/**
+ * Async thunk for account activation
+ * Used for email verification flow
+ */
 export const activate = createAsyncThunk(
   "auth/activate",
   async (userData: any, thunkAPI) => {
@@ -97,6 +115,10 @@ export const activate = createAsyncThunk(
   }
 );
 
+/**
+ * Async thunk for password reset request
+ * Initiates the password reset flow
+ */
 export const resetPassword = createAsyncThunk(
   "auth/resetPassword",
   async (userData: any, thunkAPI) => {
@@ -115,6 +137,10 @@ export const resetPassword = createAsyncThunk(
   }
 );
 
+/**
+ * Async thunk for confirming password reset
+ * Completes the password reset flow with the token and new password
+ */
 export const resetPasswordConfirm = createAsyncThunk(
   "auth/resetPasswordConfirm",
   async (userData: any, thunkAPI) => {
@@ -133,6 +159,10 @@ export const resetPasswordConfirm = createAsyncThunk(
   }
 );
 
+/**
+ * Async thunk for fetching user information
+ * Uses the access token from state to authenticate the request
+ */
 export const getUserInfo = createAsyncThunk(
   "auth/getUserInfo",
   async (_, thunkAPI) => {
@@ -153,6 +183,10 @@ export const getUserInfo = createAsyncThunk(
   }
 );
 
+/**
+ * Main auth slice containing reducers and handling async thunk actions
+ * Manages the authentication state throughout the application
+ */
 export const authSlice = createSlice({
   name: "auth",
   initialState,
@@ -166,6 +200,7 @@ export const authSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder
+      // Registration state handlers
       .addCase(register.pending, (state) => {
         state.isLoading = true;
       })
@@ -181,6 +216,7 @@ export const authSlice = createSlice({
         state.message = action.payload as string;
         state.user = null;
       })
+      // Login state handlers
       .addCase(login.pending, (state) => {
         state.isLoading = true;
       })
@@ -196,9 +232,11 @@ export const authSlice = createSlice({
         state.message = action.payload as string;
         state.user = null;
       })
+      // Logout handler
       .addCase(logout.fulfilled, (state) => {
         state.user = null;
       })
+      // Activation state handlers
       .addCase(activate.pending, (state) => {
         state.isLoading = true;
       })
@@ -214,6 +252,7 @@ export const authSlice = createSlice({
         state.message = action.payload as string;
         state.user = null;
       })
+      // Password reset state handlers
       .addCase(resetPassword.pending, (state) => {
         state.isLoading = true;
       })
@@ -228,6 +267,7 @@ export const authSlice = createSlice({
         state.message = action.payload as string;
         state.user = null;
       })
+      // Password reset confirmation state handlers
       .addCase(resetPasswordConfirm.pending, (state) => {
         state.isLoading = true;
       })
@@ -242,6 +282,7 @@ export const authSlice = createSlice({
         state.message = action.payload as string;
         state.user = null;
       })
+      // User info handler
       .addCase(getUserInfo.fulfilled, (state, action) => {
         state.userInfo = action.payload;
       });

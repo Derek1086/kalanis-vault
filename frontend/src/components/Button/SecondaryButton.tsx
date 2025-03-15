@@ -1,3 +1,7 @@
+/**
+ * Secondary button component with a darker variant of the brand color.
+ * Used for secondary actions where less visual emphasis is needed.
+ */
 import React from "react";
 
 interface SecondaryButtonProps {

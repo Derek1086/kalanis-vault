@@ -9,11 +9,18 @@ import { CiAt, CiLock } from "react-icons/ci";
 import { AiOutlineLoading3Quarters } from "react-icons/ai";
 
 import { Card } from "../components/Container";
-import { Header, Subtitle } from "../components/Text";
+import { Header, Subtitle } from "../components/Typography";
 import { PrimaryButton, SecondaryButton } from "../components/Button";
 import { IconInputField, PasswordInputField } from "../components/Input";
 
+/**
+ * LoginPage Component
+ *
+ * Handles user authentication by providing a login form with email and password fields.
+ * Manages form state, submission process, and redirects based on auth status.
+ */
 const LoginPage = () => {
+  // Form state management
   const [formData, setFormData] = useState({
     email: "",
     password: "",
@@ -26,10 +33,14 @@ const LoginPage = () => {
   const dispatch = useDispatch<AppDispatch>();
   const navigate = useNavigate();
 
+  // Get authentication state from Redux store
   const { user, isError, isSuccess, message } = useSelector(
     (state: RootState) => state.auth
   );
 
+  /**
+   * Updates form state when input values change
+   */
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData((prev) => ({
       ...prev,
@@ -37,6 +48,9 @@ const LoginPage = () => {
     }));
   };
 
+  /**
+   * Handles form submission and dispatches login action
+   */
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
@@ -48,6 +62,12 @@ const LoginPage = () => {
     dispatch(login(userData));
   };
 
+  /**
+   * Side effect to handle authentication results
+   * - Shows error notifications
+   * - Redirects on successful login
+   * - Resets auth state after handling
+   */
   useEffect(() => {
     if (isError) {
       toast.error(message);
@@ -73,7 +93,7 @@ const LoginPage = () => {
         <form className="space-y-4" onSubmit={handleSubmit}>
           <IconInputField
             type="text"
-            placeholder="Email or Username"
+            placeholder="Email"
             name="email"
             onChange={handleChange}
             value={email}

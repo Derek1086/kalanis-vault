@@ -1,3 +1,7 @@
+/**
+ * Card component that provides a centered container for content.
+ * Creates a floating card effect with background and shadow.
+ */
 import React, { ReactNode } from "react";
 
 interface CardProps {

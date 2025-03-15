@@ -1,6 +1,7 @@
 import axios from "axios";
 
-const BACKEND_DOMAIN = "http://localhost:8000";
+const BACKEND_DOMAIN =
+  import.meta.env.VITE_BACKEND_DOMAIN || "http://localhost:8000";
 
 const REGISTER_URL = `${BACKEND_DOMAIN}/api/v1/auth/users/`;
 const LOGIN_URL = `${BACKEND_DOMAIN}/api/v1/auth/jwt/create/`;
@@ -9,8 +10,11 @@ const RESET_PASSWORD_URL = `${BACKEND_DOMAIN}/api/v1/auth/users/reset_password/`
 const RESET_PASSWORD_CONFIRM_URL = `${BACKEND_DOMAIN}/api/v1/auth/users/reset_password_confirm/`;
 const GET_USER_INFO = `${BACKEND_DOMAIN}/api/v1/auth/users/me/`;
 
-// Register user
-
+/**
+ * Service for user registration
+ * @param userData - Object containing user registration data
+ * @returns Promise with response data
+ */
 const register = async (userData: any) => {
   const config = {
     headers: {
@@ -23,7 +27,11 @@ const register = async (userData: any) => {
   return response.data;
 };
 
-// Login user
+/**
+ * Service for user authentication
+ * @param userData - Object containing email and password
+ * @returns Promise with response data including JWT tokens
+ */
 const login = async (userData: { email: string; password: string }) => {
   const config = {
     headers: {
@@ -42,14 +50,19 @@ const login = async (userData: { email: string; password: string }) => {
   return response.data;
 };
 
-// Logout
-
+/**
+ * Service to handle user logout
+ * Removes user data from local storage
+ */
 const logout = () => {
   return localStorage.removeItem("user");
 };
 
-// Activate user
-
+/**
+ * Service to activate user account
+ * @param userData - Object containing activation token
+ * @returns Promise with response data
+ */
 const activate = async (userData: any) => {
   const config = {
     headers: {
@@ -62,8 +75,11 @@ const activate = async (userData: any) => {
   return response.data;
 };
 
-// Reset Password
-
+/**
+ * Service to initiate password reset process
+ * @param userData - Object containing email
+ * @returns Promise with response data
+ */
 const resetPassword = async (userData: any) => {
   const config = {
     headers: {
@@ -76,8 +92,11 @@ const resetPassword = async (userData: any) => {
   return response.data;
 };
 
-// Reset Password
-
+/**
+ * Service to confirm password reset
+ * @param userData - Object containing reset token and new password
+ * @returns Promise with response data
+ */
 const resetPasswordConfirm = async (userData: any) => {
   const config = {
     headers: {
@@ -94,8 +113,11 @@ const resetPasswordConfirm = async (userData: any) => {
   return response.data;
 };
 
-// Get User Info
-
+/**
+ * Service to get authenticated user information
+ * @param accessToken - JWT access token
+ * @returns Promise with user data
+ */
 const getUserInfo = async (accessToken: any) => {
   const config = {
     headers: {
