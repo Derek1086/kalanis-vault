@@ -4,11 +4,12 @@ import { Link, useNavigate } from "react-router-dom";
 import { RootState, AppDispatch } from "../../app/store";
 import { logout, reset } from "../../features/auth/authSlice";
 
-import { CiBellOn, CiBoxList, CiUser } from "react-icons/ci";
+import { CiBellOn, CiBoxList, CiUser, CiLogout, CiHeart } from "react-icons/ci";
 import { IoHomeOutline, IoSearch } from "react-icons/io5";
 
 import { SearchField } from "../Input";
 import { IconButton } from "../Button";
+import { DropDownMenu, DropDownItem, DropDownDivider } from "./DropDown";
 
 /**
  * Navigation bar component that displays a search field and user controls.
@@ -26,7 +27,7 @@ const NavBar = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch<AppDispatch>();
 
-  const { user } = useSelector((state: RootState) => state.auth);
+  const { user, userInfo } = useSelector((state: RootState) => state.auth);
 
   /**
    * Updates the search query state when the search input changes
@@ -39,13 +40,13 @@ const NavBar = () => {
    * Handles user logout process:
    * 1. Dispatches logout action
    * 2. Resets auth state
-   * 3. Navigates to home page
+   * 3. Navigates to login page
    * 4. Closes dropdown menu
    */
   const handleLogout = () => {
     dispatch(logout());
     dispatch(reset());
-    navigate("/");
+    navigate("/login");
     setDropdownOpen(false);
   };
 
@@ -113,22 +114,45 @@ const NavBar = () => {
               </div>
 
               {dropdownOpen && (
-                <div className="absolute right-0 mt-2 w-48 rounded-md shadow-lg py-1 bg-white ring-1 ring-black ring-opacity-5 z-10">
-                  <Link
-                    to="/profile"
-                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                <DropDownMenu>
+                  <DropDownItem
+                    onClick={() => {
+                      navigate(`/${userInfo.username}/profile`);
+                    }}
+                    icon={<CiUser className="h-5 w-5" />}
+                  >
+                    Profile
+                  </DropDownItem>
+                  <DropDownDivider />
+                  <DropDownItem icon={<CiBoxList className="h-5 w-5" />}>
+                    My Playlists
+                  </DropDownItem>
+                  <DropDownDivider />
+                  <DropDownItem icon={<CiHeart className="h-5 w-5" />}>
+                    My Likes
+                  </DropDownItem>
+                  <DropDownDivider />
+                  <DropDownItem
+                    onClick={handleLogout}
+                    icon={<CiLogout className="h-5 w-5" />}
+                  >
+                    Logout
+                  </DropDownItem>
+                  {/* <Link
+                    to={`/${userInfo.username}/profile`}
+                    className="block px-4 py-2 text-sm hover:bg-gray-400"
                     onClick={() => setDropdownOpen(false)}
                   >
                     Profile
                   </Link>
                   <Link
                     to="/login"
-                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                    className="block px-4 py-2 text-sm hover:bg-gray-400"
                     onClick={handleLogout}
                   >
                     Logout
-                  </Link>
-                </div>
+                  </Link> */}
+                </DropDownMenu>
               )}
             </div>
           </div>

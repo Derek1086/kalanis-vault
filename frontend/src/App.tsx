@@ -7,6 +7,7 @@ import NotFoundPage from "./pages/NotFoundPage";
 import ActivatePage from "./pages/ActivatePage";
 import ResetPasswordPage from "./pages/ResetPasswordPage";
 import ResetPasswordPageConfirm from "./pages/ResetPasswordPageConfirm";
+import ProfilePage from "./pages/ProfilePage";
 
 function App() {
   return (
@@ -22,6 +23,8 @@ function App() {
             path="/password/reset/confirm/:uid/:token"
             element={<ResetPasswordPageConfirm />}
           />
+          <Route path="/:username/profile" element={<ProfilePage />} />
+
           <Route path="*" element={<NotFoundPage />} />
         </Routes>
       </Router>
