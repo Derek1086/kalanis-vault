@@ -2,7 +2,15 @@ import { useState, useEffect } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { RootState } from "../app/store.tsx";
 import { getUserInfo } from "../features/auth/authSlice";
+
 import NavBar from "../components/Navigation/NavBar.tsx";
+import { PrimaryIconButton } from "../components/Button/PrimaryIconButton.tsx";
+import { Header, SecondaryText } from "../components/Typography";
+import { IconButton } from "../components/Button/IconButton.tsx";
+
+import { CiCirclePlus } from "react-icons/ci";
+
+import { FaChevronRight, FaChevronLeft } from "react-icons/fa";
 
 /**
  * Interface for the result of a social media link analysis
@@ -155,184 +163,141 @@ const HomePage = () => {
     }
   };
 
+  const nextTrending = () => {
+    // setTrendingIndex((prev) =>
+    //   prev + 3 >= trendingVideos.length ? 0 : prev + 3
+    // );
+  };
+
+  const prevTrending = () => {
+    // setTrendingIndex((prev) =>
+    //   prev - 3 < 0 ? Math.max(0, trendingVideos.length - 3) : prev - 3
+    // );
+  };
+
   return (
     <>
       <NavBar />
-      <nav className="navbar">
-        <ul className="nav-links">
-          {user ? (
-            <>
-              <div>
-                <h1>Welcome, {userInfo?.first_name || "User"}</h1>
-              </div>
-              <div className="">
-                <div className="mb-4">
-                  <label
-                    htmlFor="url-input"
-                    className="block text-sm font-medium text-gray-700 mb-2"
-                  >
-                    Video URL
-                  </label>
-                  <input
-                    id="url-input"
-                    type="text"
-                    placeholder="https://www.tiktok.com/... or https://www.instagram.com/..."
-                    className=""
-                    value={inputUrl}
-                    onChange={(e) => setInputUrl(e.target.value)}
-                    onKeyDown={(e) => e.key === "Enter" && handleAnalyzeLink()}
-                  />
-                </div>
-                <button
-                  onClick={handleAnalyzeLink}
-                  disabled={isLoading || !inputUrl.trim()}
-                  className={`w-full py-3 px-4 rounded-md font-medium text-white ${
-                    isLoading || !inputUrl.trim()
-                      ? "bg-gray-400 cursor-not-allowed"
-                      : "bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-                  }`}
-                >
-                  {isLoading ? "Loading..." : "Embed Video"}
-                </button>
-              </div>
-
-              {error && <div className="text-red-600">{error}</div>}
-
-              {/* TikTok Embed Display Section */}
-              {result && result.isValid && result.platform === "tiktok" && (
-                <div className="p-4 border rounded">
-                  <h2 className="text-lg font-semibold">Detection Result:</h2>
-                  <p>Platform: {result.platform}</p>
-                  <p>URL: {result.url}</p>
-                  {result.metadata?.author && (
-                    <p>Author: {result.metadata.author}</p>
-                  )}
-                  {result.metadata?.title && (
-                    <p>Title: {result.metadata.title}</p>
-                  )}
-                  {result.embedHtml && (
-                    <>
-                      <blockquote
-                        className="tiktok-embed"
-                        cite={result.url}
-                        data-video-id={new URL(result.url).pathname
-                          .split("/")
-                          .pop()}
-                        style={{ maxWidth: "605px", minWidth: "325px" }}
-                      >
-                        <section>
-                          <a
-                            target="_blank"
-                            title={`@${result.metadata?.author}`}
-                            href={
-                              result.metadata?.author
-                                ? `https://www.tiktok.com/@${result.metadata.author}?refer=embed`
-                                : "#"
-                            }
-                          >
-                            @{result.metadata?.author}
-                          </a>
-                          {result.metadata?.title && (
-                            <p>{result.metadata.title}</p>
-                          )}
-                        </section>
-                      </blockquote>
-                      <script
-                        async
-                        src="https://www.tiktok.com/embed.js"
-                      ></script>
-                    </>
-                  )}
-                </div>
-              )}
-            </>
-          ) : (
-            <>
-              {/* Guest User View - Same functionality but without personalized greeting */}
-              <div className="">
-                <div className="mb-4">
-                  <label
-                    htmlFor="url-input"
-                    className="block text-sm font-medium text-gray-700 mb-2"
-                  >
-                    Video URL
-                  </label>
-                  <input
-                    id="url-input"
-                    type="text"
-                    placeholder="https://www.tiktok.com/... or https://www.instagram.com/..."
-                    className=""
-                    value={inputUrl}
-                    onChange={(e) => setInputUrl(e.target.value)}
-                    onKeyDown={(e) => e.key === "Enter" && handleAnalyzeLink()}
-                  />
-                </div>
-                <button
-                  onClick={handleAnalyzeLink}
-                  disabled={isLoading || !inputUrl.trim()}
-                  className={`w-full py-3 px-4 rounded-md font-medium text-white ${
-                    isLoading || !inputUrl.trim()
-                      ? "bg-gray-400 cursor-not-allowed"
-                      : "bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-                  }`}
-                >
-                  {isLoading ? "Loading..." : "Embed Video"}
-                </button>
-              </div>
-
-              {error && <div className="text-red-600">{error}</div>}
-
-              {/* TikTok Embed Display Section for Guest */}
-              {result && result.isValid && result.platform === "tiktok" && (
-                <div className="p-4 border rounded">
-                  <h2 className="text-lg font-semibold">Detection Result:</h2>
-                  <p>Platform: {result.platform}</p>
-                  <p>URL: {result.url}</p>
-                  {result.metadata?.author && (
-                    <p>Author: {result.metadata.author}</p>
-                  )}
-                  {result.metadata?.title && (
-                    <p>Title: {result.metadata.title}</p>
-                  )}
-                  {result.embedHtml && (
-                    <>
-                      <blockquote
-                        className="tiktok-embed"
-                        cite={result.url}
-                        data-video-id={new URL(result.url).pathname
-                          .split("/")
-                          .pop()}
-                        style={{ maxWidth: "605px", minWidth: "325px" }}
-                      >
-                        <section>
-                          <a
-                            target="_blank"
-                            title={`@${result.metadata?.author}`}
-                            href={
-                              result.metadata?.author
-                                ? `https://www.tiktok.com/@${result.metadata.author}?refer=embed`
-                                : "#"
-                            }
-                          >
-                            @{result.metadata?.author}
-                          </a>
-                          {result.metadata?.title && (
-                            <p>{result.metadata.title}</p>
-                          )}
-                        </section>
-                      </blockquote>
-                      <script
-                        async
-                        src="https://www.tiktok.com/embed.js"
-                      ></script>
-                    </>
-                  )}
-                </div>
-              )}
-            </>
-          )}
-        </ul>
-      </nav>
+      <div className="relative h-80 bg-gradient-to-r from-[#c549d4] to-[#9b36b7] overflow-hidden flex items-center px-6">
+        <div className="max-w-2xl text-white">
+          <Header text="Create, Collect, Share" className="text-4xl mb-2" />
+          <SecondaryText
+            text="Build custom playlists from your favorite online videos."
+            className="text-xl mb-4"
+          />
+          <div className="w-3/4">
+            <PrimaryIconButton
+              type="button"
+              icon={<CiCirclePlus className="h-7 w-7" />}
+              className="bg-white text-[#c549d4] hover:bg-[#c549d4] hover:text-white"
+            >
+              Create New Playlist
+            </PrimaryIconButton>
+          </div>
+        </div>
+      </div>
+      <div className="container mx-auto px-6 py-8">
+        <div className="flex items-center justify-between mb-6">
+          <Header text="Trending Now" className="text-3xl font-bold" />
+          <div className="flex items-center space-x-2">
+            <IconButton
+              icon={<FaChevronLeft className="h-5 w-5" />}
+              onClick={prevTrending}
+              className="h-8 w-8 flex items-center justify-center"
+            />
+            <IconButton
+              icon={<FaChevronRight className="h-5 w-5" />}
+              onClick={nextTrending}
+              className="h-8 w-8 flex items-center justify-center"
+            />
+          </div>
+        </div>
+      </div>
+      <div className="container mx-auto px-6 py-8">
+        <div className="flex items-center justify-between mb-6">
+          <Header text="Popular Playlists" className="text-3xl font-bold" />
+          <div className="flex items-center space-x-2">
+            <IconButton
+              icon={<FaChevronLeft className="h-5 w-5" />}
+              onClick={prevTrending}
+              className="h-8 w-8 flex items-center justify-center"
+            />
+            <IconButton
+              icon={<FaChevronRight className="h-5 w-5" />}
+              onClick={nextTrending}
+              className="h-8 w-8 flex items-center justify-center"
+            />
+          </div>
+        </div>
+      </div>
+      <div className="container mx-auto px-6 py-8">
+        <div className="flex items-center justify-between mb-6">
+          <Header text="Recommended Playlists" className="text-3xl font-bold" />
+          <div className="flex items-center space-x-2">
+            <IconButton
+              icon={<FaChevronLeft className="h-5 w-5" />}
+              onClick={prevTrending}
+              className="h-8 w-8 flex items-center justify-center"
+            />
+            <IconButton
+              icon={<FaChevronRight className="h-5 w-5" />}
+              onClick={nextTrending}
+              className="h-8 w-8 flex items-center justify-center"
+            />
+          </div>
+        </div>
+      </div>
+      <div className="container mx-auto px-6 py-8">
+        <div className="flex items-center justify-between mb-6">
+          <Header text="Your Liked Playlists" className="text-3xl font-bold" />
+          <div className="flex items-center space-x-2">
+            <IconButton
+              icon={<FaChevronLeft className="h-5 w-5" />}
+              onClick={prevTrending}
+              className="h-8 w-8 flex items-center justify-center"
+            />
+            <IconButton
+              icon={<FaChevronRight className="h-5 w-5" />}
+              onClick={nextTrending}
+              className="h-8 w-8 flex items-center justify-center"
+            />
+          </div>
+        </div>
+      </div>
+      <div className="container mx-auto px-6 py-8">
+        <div className="flex items-center justify-between mb-6">
+          <Header text="Recent Playlists" className="text-3xl font-bold" />
+          <div className="flex items-center space-x-2">
+            <IconButton
+              icon={<FaChevronLeft className="h-5 w-5" />}
+              onClick={prevTrending}
+              className="h-8 w-8 flex items-center justify-center"
+            />
+            <IconButton
+              icon={<FaChevronRight className="h-5 w-5" />}
+              onClick={nextTrending}
+              className="h-8 w-8 flex items-center justify-center"
+            />
+          </div>
+        </div>
+      </div>
+      <div className="container mx-auto px-6 py-8">
+        <div className="flex items-center justify-between mb-6">
+          <Header text="Your Playlists" className="text-3xl font-bold" />
+          <div className="flex items-center space-x-2">
+            <IconButton
+              icon={<FaChevronLeft className="h-5 w-5" />}
+              onClick={prevTrending}
+              className="h-8 w-8 flex items-center justify-center"
+            />
+            <IconButton
+              icon={<FaChevronRight className="h-5 w-5" />}
+              onClick={nextTrending}
+              className="h-8 w-8 flex items-center justify-center"
+            />
+          </div>
+        </div>
+      </div>
     </>
   );
 };

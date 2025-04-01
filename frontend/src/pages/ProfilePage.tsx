@@ -1,4 +1,4 @@
-import { useParams } from "react-router-dom";
+//import { useParams } from "react-router-dom";
 import { useSelector } from "react-redux";
 import { RootState } from "../app/store.tsx";
 import { useState } from "react";
@@ -45,7 +45,7 @@ const ProfilePage = () => {
       {user ? (
         <>
           <NavBar />
-          <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-100 to-indigo-200 p-4">
+          <div className="min-h-screen flex items-center justify-center p-4">
             <div className="w-full max-w-4xl bg-white rounded-xl shadow-lg overflow-hidden">
               <div className="p-8">
                 {/* Header section */}

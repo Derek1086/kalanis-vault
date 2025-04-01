@@ -68,10 +68,10 @@ const RegisterPage = () => {
     setIsLoading(true);
 
     if (password !== re_password) {
-      toast.error("Passwords do not match");
+      toast.error("Passwords do not match", { theme: "dark" });
       setIsLoading(false);
     } else if (!username) {
-      toast.error("Username is required");
+      toast.error("Username is required", { theme: "dark" });
       setIsLoading(false);
     } else {
       const userData = {
@@ -94,14 +94,15 @@ const RegisterPage = () => {
    */
   useEffect(() => {
     if (isError) {
-      toast.error(message);
+      toast.error(message, { theme: "dark" });
       setIsLoading(false);
     }
 
     if (isSuccess || user) {
       navigate("/login");
       toast.success(
-        "An activation email has been sent to your email. Please check your email."
+        "An activation email has been sent to your email. Please check your email.",
+        { theme: "dark" }
       );
     }
 

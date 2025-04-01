@@ -70,7 +70,7 @@ const LoginPage = () => {
    */
   useEffect(() => {
     if (isError) {
-      toast.error(message);
+      toast.error(message, { theme: "dark" });
       setIsLoading(false);
     }
 

@@ -32,11 +32,13 @@ const ActivatePage = () => {
 
   useEffect(() => {
     if (isError) {
-      toast.error(message);
+      toast.error(message, { theme: "dark" });
     }
 
     if (isSuccess) {
-      toast.success("Your account has been activated! You can login now");
+      toast.success("Your account has been activated! You can login now", {
+        theme: "dark",
+      });
       navigate("/login");
     }
 

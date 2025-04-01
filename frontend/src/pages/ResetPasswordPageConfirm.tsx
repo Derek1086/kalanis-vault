@@ -4,7 +4,14 @@ import { toast } from "react-toastify";
 import { useSelector, useDispatch } from "react-redux";
 import { resetPasswordConfirm, reset } from "../features/auth/authSlice";
 import { AppDispatch, RootState } from "../app/store";
-//import Spinner from "../components/Spinner";
+
+import { Card } from "../components/Container";
+import { Header, SecondaryText } from "../components/Typography";
+import { PasswordInputField } from "../components/Input";
+import { PrimaryButton } from "../components/Button";
+
+import { CiLock } from "react-icons/ci";
+import { AiOutlineLoading3Quarters } from "react-icons/ai";
 
 const ResetPasswordPageConfirm = () => {
   const { uid, token } = useParams();
@@ -27,6 +34,7 @@ const ResetPasswordPageConfirm = () => {
       ...prev,
       [e.target.name]: e.target.value,
     }));
+    console.log(formData);
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -34,7 +42,7 @@ const ResetPasswordPageConfirm = () => {
 
     // Check if passwords match
     if (new_password !== re_new_password) {
-      toast.error("Passwords do not match");
+      toast.error("Passwords do not match", { theme: "dark" });
       return;
     }
 
@@ -50,10 +58,10 @@ const ResetPasswordPageConfirm = () => {
 
   useEffect(() => {
     if (isError) {
-      toast.error(message);
+      toast.error(message, { theme: "dark" });
     }
     if (isSuccess) {
-      toast.success("Your password was reset successfully.");
+      toast.success("Your password was reset successfully.", { theme: "dark" });
       navigate("/login");
     }
 
@@ -64,35 +72,39 @@ const ResetPasswordPageConfirm = () => {
 
   return (
     <>
-      <div className="container auth__container">
-        <h1 className="main__title">Reset Your Password</h1>
-
-        {isLoading && <p>Loading...</p>}
-
-        <form className="auth__form" onSubmit={handleSubmit}>
-          <input
-            type="password"
-            placeholder="New password"
+      <Card>
+        <form className="space-y-4" onSubmit={handleSubmit}>
+          <Header text="Reset Password" className="text-center" />
+          <SecondaryText
+            text="Create a new password."
+            className="text-gray-400 mb-6 mt-4 text-center"
+          />
+          <PasswordInputField
             name="new_password"
+            placeholder="New Password"
             onChange={handleChange}
             value={new_password}
             required
-            minLength={8}
+            icon={<CiLock className="h-5 w-5 text-gray-400" />}
           />
-          <input
-            type="password"
-            placeholder="Confirm new password"
+          <PasswordInputField
             name="re_new_password"
+            placeholder="Confirm Password"
             onChange={handleChange}
             value={re_new_password}
             required
-            minLength={8}
+            icon={<CiLock className="h-5 w-5 text-gray-400" />}
           />
-          <button className="btn btn-primary" type="submit">
-            Reset Password
-          </button>
+
+          <PrimaryButton type="submit" disabled={isLoading}>
+            {isLoading ? (
+              <AiOutlineLoading3Quarters className="animate-spin h-5 w-5" />
+            ) : (
+              "Reset Password"
+            )}
+          </PrimaryButton>
         </form>
-      </div>
+      </Card>
     </>
   );
 };

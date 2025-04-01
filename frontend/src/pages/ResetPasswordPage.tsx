@@ -2,9 +2,15 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import { useDispatch, useSelector } from "react-redux";
-//import Spinner from "../components/Spinner"
 import { resetPassword, reset } from "../features/auth/authSlice";
 import { AppDispatch, RootState } from "../app/store";
+
+import { Card } from "../components/Container";
+import { Header, SecondaryText } from "../components/Typography";
+import { PrimaryButton } from "../components/Button";
+import { IconInputField } from "../components/Input";
+
+import { CiAt } from "react-icons/ci";
 
 const ResetPasswordPage = () => {
   const [formData, setFormData] = useState({
@@ -16,7 +22,7 @@ const ResetPasswordPage = () => {
   const dispatch = useDispatch<AppDispatch>();
   const navigate = useNavigate();
 
-  const { isLoading, isError, isSuccess, message } = useSelector(
+  const { isError, isSuccess, message } = useSelector(
     (state: RootState) => state.auth
   );
 
@@ -39,10 +45,12 @@ const ResetPasswordPage = () => {
 
   useEffect(() => {
     if (isError) {
-      toast.error(message);
+      toast.error(message, { theme: "dark" });
     }
     if (isSuccess) {
-      toast.success("A reset password email has been sent to you.");
+      toast.success("A reset password email has been sent to you.", {
+        theme: "dark",
+      });
       navigate("/");
     }
 
@@ -53,26 +61,28 @@ const ResetPasswordPage = () => {
 
   return (
     <>
-      <div className="container auth__container">
-        <h1 className="main__title">Reset Password</h1>
-
-        {isLoading && <p>Loading...</p>}
-
-        <form className="auth__form" onSubmit={handleSubmit}>
-          <input
-            type="email"
+      <Card>
+        <form className="space-y-4" onSubmit={handleSubmit}>
+          <Header text="Reset Password" className="text-center" />
+          <SecondaryText
+            text="Enter your email to reset your password."
+            className="text-gray-400 mb-6 mt-4 text-center"
+          />
+          <IconInputField
+            type="text"
             placeholder="Email"
             name="email"
             onChange={handleChange}
             value={email}
             required
+            autoFocus={true}
+            icon={<CiAt className="h-5 w-5 text-gray-400" />}
           />
-
-          <button className="btn btn-primary" type="submit">
+          <PrimaryButton type="submit" disabled={false}>
             Reset Password
-          </button>
+          </PrimaryButton>
         </form>
-      </div>
+      </Card>
     </>
   );
 };

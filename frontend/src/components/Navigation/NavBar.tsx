@@ -127,11 +127,9 @@ const NavBar = () => {
                   >
                     Profile
                   </DropDownItem>
-                  <DropDownDivider />
                   <DropDownItem icon={<CiBoxList className="h-5 w-5" />}>
                     My Playlists
                   </DropDownItem>
-                  <DropDownDivider />
                   <DropDownItem icon={<CiHeart className="h-5 w-5" />}>
                     My Likes
                   </DropDownItem>
@@ -142,20 +140,6 @@ const NavBar = () => {
                   >
                     Logout
                   </DropDownItem>
-                  {/* <Link
-                    to={`/${userInfo.username}/profile`}
-                    className="block px-4 py-2 text-sm hover:bg-gray-400"
-                    onClick={() => setDropdownOpen(false)}
-                  >
-                    Profile
-                  </Link>
-                  <Link
-                    to="/login"
-                    className="block px-4 py-2 text-sm hover:bg-gray-400"
-                    onClick={handleLogout}
-                  >
-                    Logout
-                  </Link> */}
                 </DropDownMenu>
               )}
             </div>
