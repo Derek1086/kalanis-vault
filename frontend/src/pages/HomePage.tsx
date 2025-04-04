@@ -4,6 +4,7 @@ import { RootState } from "../app/store.tsx";
 import { getUserInfo } from "../features/auth/authSlice";
 
 import NavBar from "../components/Navigation/NavBar.tsx";
+import { Modal } from "../components/Container";
 import { PrimaryIconButton } from "../components/Button/PrimaryIconButton.tsx";
 import { Header, SecondaryText } from "../components/Typography";
 import { IconButton } from "../components/Button/IconButton.tsx";
@@ -63,7 +64,8 @@ const HomePage = () => {
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Fetch user info when component mounts if it's not already available
+  const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
+
   useEffect(() => {
     if (user && Object.keys(userInfo || {}).length === 0) {
       dispatch(getUserInfo() as any);
@@ -178,6 +180,12 @@ const HomePage = () => {
   return (
     <>
       <NavBar />
+      <Modal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        title="Create New Playlist"
+        description="Name your playlist and add videos to it."
+      />
       <div className="relative h-80 bg-gradient-to-r from-[#c549d4] to-[#9b36b7] overflow-hidden flex items-center px-6">
         <div className="max-w-2xl text-white">
           <Header text="Create, Collect, Share" className="text-4xl mb-2" />
@@ -190,6 +198,7 @@ const HomePage = () => {
               type="button"
               icon={<CiCirclePlus className="h-7 w-7" />}
               className="bg-white text-[#c549d4] hover:bg-[#c549d4] hover:text-white"
+              onClick={() => setIsModalOpen(true)}
             >
               Create New Playlist
             </PrimaryIconButton>

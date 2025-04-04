@@ -8,7 +8,7 @@ import ActivatePage from "./pages/ActivatePage";
 import ResetPasswordPage from "./pages/ResetPasswordPage";
 import ResetPasswordPageConfirm from "./pages/ResetPasswordPageConfirm";
 import ProfilePage from "./pages/ProfilePage";
-import NewPlaylist from "./pages/NewPlaylist";
+import MyPlaylists from "./pages/MyPlaylists";
 
 function App() {
   return (
@@ -25,7 +25,7 @@ function App() {
             element={<ResetPasswordPageConfirm />}
           />
           <Route path="/:username/profile" element={<ProfilePage />} />
-          <Route path="/newplaylist" element={<NewPlaylist />} />
+          <Route path="/:username/playlists" element={<MyPlaylists />} />
           <Route path="*" element={<NotFoundPage />} />
         </Routes>
       </Router>

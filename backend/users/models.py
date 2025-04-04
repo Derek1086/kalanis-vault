@@ -58,3 +58,23 @@ class User(AbstractBaseUser, PermissionsMixin):
             String containing the user's first and last name
         """
         return f"{self.first_name} {self.last_name}"
+    
+    @property
+    def playlist_count(self):
+        """Returns the number of playlists created by this user"""
+        return self.playlists.count()
+
+    @property
+    def follower_count(self):
+        """Returns the number of users following this user"""
+        return self.followers.count()
+
+    @property
+    def following_count(self):
+        """Returns the number of users this user is following"""
+        return self.following.count()
+
+    @property
+    def liked_playlist_count(self):
+        """Returns the number of playlists this user has liked"""
+        return self.liked_playlists.count()

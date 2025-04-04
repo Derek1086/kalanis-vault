@@ -1,7 +1,7 @@
 import React from "react";
 
-const NewPlaylist = () => {
+const MyPlaylists = () => {
   return <div>NewPlaylist</div>;
 };
 
-export default NewPlaylist;
+export default MyPlaylists;
