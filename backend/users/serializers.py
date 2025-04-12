@@ -39,19 +39,6 @@ class CreateUserSerializer(UserCreateSerializer):
         return data
     
     def create(self, validated_data):
-        """
-        Creates a new user instance with the validated data.
-        
-        Handles special case for profile pictures and performs additional validation.
-        
-        Returns:
-            The created user instance
-            
-        Raises:
-            ValueError: If required fields are missing
-        """
-        logger.debug(f"Creating user with data: {validated_data}")
-
         if 'first_name' not in validated_data or 'last_name' not in validated_data:
             raise ValueError("First name and last name are required")
         
@@ -73,6 +60,7 @@ class CreateUserSerializer(UserCreateSerializer):
         logger.debug(f"User created: {user}")
 
         return user
+
 
 class CustomTokenCreateSerializer(TokenCreateSerializer):
     """

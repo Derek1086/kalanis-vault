@@ -5,7 +5,7 @@
 import React from "react";
 
 interface PrimaryButtonProps {
-  type: "button" | "submit" | "reset";
+  type?: "button" | "submit" | "reset";
   className?: string;
   disabled?: boolean;
   children: React.ReactNode;
@@ -13,7 +13,7 @@ interface PrimaryButtonProps {
 }
 
 export const PrimaryButton: React.FC<PrimaryButtonProps> = ({
-  type,
+  type = "button",
   className = "",
   disabled = false,
   children,

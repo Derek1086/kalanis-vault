@@ -2,6 +2,21 @@ from django.db import models
 from django.utils.translation import gettext_lazy as _
 from users.models import User
 
+class Tag(models.Model):
+    """
+    Model representing playlist tags.
+    """
+    name = models.CharField(_("Name"), max_length=50, unique=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        verbose_name = _("Tag")
+        verbose_name_plural = _("Tags")
+        ordering = ['name']
+    
+    def __str__(self):
+        return self.name
+
 class Playlist(models.Model):
     """
     Model representing a user's video playlist.
@@ -19,9 +34,11 @@ class Playlist(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     is_public = models.BooleanField(_("Public"), default=True)
+    view_count = models.PositiveIntegerField(_("View Count"), default=0)
+    share_count = models.PositiveIntegerField(_("Share Count"), default=0)
     
-    # Many-to-many field for users who like this playlist
     likes = models.ManyToManyField(User, related_name="liked_playlists", blank=True)
+    tags = models.ManyToManyField(Tag, related_name="playlists", blank=True)
     
     class Meta:
         verbose_name = _("Playlist")
@@ -50,6 +67,12 @@ class Video(models.Model):
     tiktok_url = models.URLField(_("TikTok URL"))
     tiktok_id = models.CharField(_("TikTok ID"), max_length=100)
     thumbnail_url = models.URLField(_("Thumbnail URL"), blank=True, null=True)
+    custom_thumbnail = models.ImageField(
+        _("Custom Thumbnail"),
+        upload_to="video_thumbnails/",
+        blank=True,
+        null=True
+    )
     playlist = models.ForeignKey(Playlist, on_delete=models.CASCADE, related_name="videos")
     added_at = models.DateTimeField(auto_now_add=True)
     order = models.PositiveIntegerField(_("Order"), default=0)

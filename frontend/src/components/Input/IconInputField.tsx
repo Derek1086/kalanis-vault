@@ -13,6 +13,9 @@ interface IconInputFieldProps {
   required?: boolean;
   autoFocus?: boolean;
   icon: React.ReactNode;
+  className?: string;
+  onKeyDown?: React.KeyboardEventHandler<HTMLInputElement>;
+  disabled?: boolean;
 }
 
 export const IconInputField: React.FC<IconInputFieldProps> = ({
@@ -24,10 +27,15 @@ export const IconInputField: React.FC<IconInputFieldProps> = ({
   required = false,
   autoFocus = false,
   icon,
+  className = "",
+  onKeyDown = () => {},
+  disabled = false,
 }) => {
   return (
     <div className="relative">
-      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+      <div
+        className={`absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none ${className}`}
+      >
         {icon}
       </div>
       <input
@@ -38,6 +46,8 @@ export const IconInputField: React.FC<IconInputFieldProps> = ({
         value={value}
         required={required}
         autoFocus={autoFocus}
+        onKeyDown={onKeyDown}
+        disabled={disabled}
         className="pl-10 pr-3 py-2 w-full border-2 border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#c549d4] focus:border-[#c549d4]"
       />
     </div>

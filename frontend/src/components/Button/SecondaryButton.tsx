@@ -5,14 +5,14 @@
 import React from "react";
 
 interface SecondaryButtonProps {
-  type: "button" | "submit" | "reset";
+  type?: "button" | "submit" | "reset";
   className?: string;
   children: React.ReactNode;
   onClick?: () => void;
 }
 
 export const SecondaryButton: React.FC<SecondaryButtonProps> = ({
-  type,
+  type = "button",
   className = "",
   children,
   onClick = () => {},

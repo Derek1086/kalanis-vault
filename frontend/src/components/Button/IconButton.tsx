@@ -8,12 +8,14 @@ interface IconButtonProps {
   icon: React.ReactNode;
   onClick?: () => void;
   className?: string;
+  disabled?: boolean;
 }
 
 export const IconButton: React.FC<IconButtonProps> = ({
   icon,
   onClick = () => {},
   className = "",
+  disabled = false,
 }) => {
   return (
     <button

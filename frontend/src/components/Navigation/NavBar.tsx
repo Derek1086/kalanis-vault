@@ -4,12 +4,25 @@ import { Link, useNavigate } from "react-router-dom";
 import { RootState, AppDispatch } from "../../app/store";
 import { logout, reset } from "../../features/auth/authSlice";
 
-import { CiBellOn, CiBoxList, CiUser, CiLogout, CiHeart } from "react-icons/ci";
+import {
+  CiCirclePlus,
+  CiBoxList,
+  CiUser,
+  CiLogout,
+  CiHeart,
+} from "react-icons/ci";
 import { IoHomeOutline, IoSearch } from "react-icons/io5";
 
 import { SearchField } from "../Input";
 import { IconButton } from "../Button";
 import { DropDownMenu, DropDownItem, DropDownDivider } from "./DropDown";
+
+const BACKEND_DOMAIN =
+  import.meta.env.VITE_BACKEND_DOMAIN || "http://localhost:8000";
+
+interface NavBarProps {
+  onCreatePlaylist?: () => void;
+}
 
 /**
  * Navigation bar component that displays a search field and user controls.
@@ -18,8 +31,9 @@ import { DropDownMenu, DropDownItem, DropDownDivider } from "./DropDown";
  * - Search functionality
  * - User dropdown menu with logout option
  * - Responsive design
+ * - User profile picture display
  */
-const NavBar = () => {
+const NavBar = ({ onCreatePlaylist }: NavBarProps) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -28,6 +42,14 @@ const NavBar = () => {
   const dispatch = useDispatch<AppDispatch>();
 
   const { user, userInfo } = useSelector((state: RootState) => state.auth);
+
+  // Default profile image path
+  const defaultProfileImage = `${BACKEND_DOMAIN}/media/profile_pics/default.png`;
+
+  // Get profile image URL
+  const profileImageUrl = userInfo?.profile_picture
+    ? `${BACKEND_DOMAIN}${userInfo.profile_picture}`
+    : defaultProfileImage;
 
   /**
    * Updates the search query state when the search input changes
@@ -99,22 +121,31 @@ const NavBar = () => {
         {user ? (
           <div className="flex items-center space-x-4">
             <IconButton
-              icon={<CiBellOn className="h-7 w-7" />}
-              onClick={() => {}}
+              icon={<CiCirclePlus className="h-7 w-7" />}
+              onClick={onCreatePlaylist}
             />
             <IconButton
               icon={<CiBoxList className="h-7 w-7" />}
-              onClick={() => {}}
+              onClick={() => {
+                navigate(`/${userInfo.username}/playlists`);
+              }}
             />
             <div className="relative" ref={dropdownRef}>
               <div
                 className="flex items-center cursor-pointer"
                 onClick={() => setDropdownOpen(!dropdownOpen)}
               >
-                <IconButton
-                  icon={<CiUser className="h-7 w-7" />}
-                  onClick={() => {}}
-                />
+                <div className="h-10 w-10 rounded-full overflow-hidden">
+                  <img
+                    src={profileImageUrl}
+                    alt={`${userInfo?.first_name || "User"}'s profile`}
+                    className="h-full w-full object-cover"
+                    onError={(e) => {
+                      // If profile image fails to load, use default
+                      e.currentTarget.src = defaultProfileImage;
+                    }}
+                  />
+                </div>
               </div>
 
               {dropdownOpen && (
@@ -122,15 +153,25 @@ const NavBar = () => {
                   <DropDownItem
                     onClick={() => {
                       navigate(`/${userInfo.username}/profile`);
+                      setDropdownOpen(false);
                     }}
                     icon={<CiUser className="h-5 w-5" />}
                   >
                     Profile
                   </DropDownItem>
-                  <DropDownItem icon={<CiBoxList className="h-5 w-5" />}>
+                  <DropDownItem
+                    onClick={() => {
+                      navigate(`/${userInfo.username}/playlists`);
+                      setDropdownOpen(false);
+                    }}
+                    icon={<CiBoxList className="h-5 w-5" />}
+                  >
                     My Playlists
                   </DropDownItem>
-                  <DropDownItem icon={<CiHeart className="h-5 w-5" />}>
+                  <DropDownItem
+                    icon={<CiHeart className="h-5 w-5" />}
+                    onClick={() => setDropdownOpen(false)}
+                  >
                     My Likes
                   </DropDownItem>
                   <DropDownDivider />

@@ -1,34 +1,139 @@
-//import { useParams } from "react-router-dom";
-import { useSelector } from "react-redux";
+import { useSelector, useDispatch } from "react-redux";
 import { RootState } from "../app/store.tsx";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import axios from "axios";
 import NavBar from "../components/Navigation/NavBar.tsx";
 
 import { CiAt, CiLock, CiHeart, CiBoxList } from "react-icons/ci";
 import { FaUsers, FaCamera } from "react-icons/fa";
 import { MdEdit } from "react-icons/md";
 
+const BACKEND_DOMAIN =
+  import.meta.env.VITE_BACKEND_DOMAIN || "http://localhost:8000";
+
+// Define the playlist interface based on your API response
+interface PlaylistData {
+  id: number;
+  title: string;
+  description: string | null;
+  cover_image: string | null;
+  is_public: boolean;
+  video_count: number;
+  like_count: number;
+}
+
 const ProfilePage = () => {
-  //const { username } = useParams();
+  const dispatch = useDispatch();
   const { user, userInfo } = useSelector((state: RootState) => state.auth);
 
   const [isEditing, setIsEditing] = useState(false);
+  const [playlistsCount, setPlaylistsCount] = useState(0);
+  const [followersCount, setFollowersCount] = useState(0);
+  const [likesCount, setLikesCount] = useState(0);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // Update the default profile image path
+  const defaultProfileImage = `${BACKEND_DOMAIN}/media/profile_pics/default.png`;
+
   const [profile, setProfile] = useState({
-    firstName: "Jane",
-    lastName: "Doe",
-    username: "janedoe",
-    email: "jane.doe@example.com",
-    profileImage: "/api/placeholder/150/150",
-    followers: 345,
-    favorites: 128,
-    albums: 24,
+    firstName: userInfo?.first_name || "Jane",
+    lastName: userInfo?.last_name || "Doe",
+    username: userInfo?.username || "janedoe",
+    email: userInfo?.email || "jane.doe@example.com",
+    profileImage: defaultProfileImage,
   });
+
+  useEffect(() => {
+    if (user) {
+      fetchUserData();
+    }
+  }, [user]);
+
+  useEffect(() => {
+    if (userInfo) {
+      setProfile((prev) => ({
+        ...prev,
+        firstName: userInfo.first_name || prev.firstName,
+        lastName: userInfo.last_name || prev.lastName,
+        username: userInfo.username || prev.username,
+        email: userInfo.email || prev.email,
+        // Use the profile_picture from userInfo if available, otherwise use the default
+        profileImage: userInfo.profile_picture
+          ? `${BACKEND_DOMAIN}${userInfo.profile_picture}`
+          : defaultProfileImage,
+      }));
+    }
+  }, [userInfo]);
+
+  const fetchUserData = async () => {
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      // Get token from Redux state or localStorage as fallback
+      const token =
+        user?.access || localStorage.getItem("user")
+          ? JSON.parse(localStorage.getItem("user") || "{}").access
+          : null;
+
+      if (!token) {
+        setError("Authentication required");
+        setIsLoading(false);
+        return;
+      }
+
+      // Fetch playlists
+      const playlistsResponse = await axios.get<PlaylistData[]>(
+        `${BACKEND_DOMAIN}/api/v1/playlists/my_playlists/`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+      setPlaylistsCount(playlistsResponse.data.length);
+
+      // Fetch liked playlists (to get likes count)
+      const likedPlaylistsResponse = await axios.get<PlaylistData[]>(
+        `${BACKEND_DOMAIN}/api/v1/playlists/liked_playlists/`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+      setLikesCount(likedPlaylistsResponse.data.length);
+
+      // Fetch followers
+      const followersResponse = await axios.get(
+        `${BACKEND_DOMAIN}/api/v1/follows/`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      // Count followers where current user is being followed
+      const followers = followersResponse.data.filter(
+        (follow: any) => follow.followed === userInfo.id
+      );
+      setFollowersCount(followers.length);
+
+      setIsLoading(false);
+    } catch (err) {
+      setIsLoading(false);
+      console.error("Error fetching data:", err);
+      setError("Failed to load user data");
+    }
+  };
 
   const handleEditToggle = () => {
     setIsEditing(!isEditing);
   };
 
-  const handleInputChange = (e: any) => {
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setProfile((prev) => ({
       ...prev,
@@ -36,8 +141,55 @@ const ProfilePage = () => {
     }));
   };
 
-  const handleSave = () => {
-    setIsEditing(false);
+  const handleSave = async () => {
+    try {
+      const token =
+        user?.access ||
+        (localStorage.getItem("user")
+          ? JSON.parse(localStorage.getItem("user") || "{}").access
+          : null);
+
+      if (!token) {
+        setError("Authentication required");
+        return;
+      }
+
+      // Create form data to handle possible file uploads
+      const formData = new FormData();
+      formData.append("first_name", profile.firstName);
+      formData.append("last_name", profile.lastName);
+      formData.append("username", profile.username);
+      formData.append("email", profile.email);
+
+      // Make API call to update profile
+      await axios.patch(`${BACKEND_DOMAIN}/api/v1/users/me/`, formData, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "multipart/form-data",
+        },
+      });
+
+      setIsEditing(false);
+      fetchUserData(); // Refresh data
+    } catch (err) {
+      console.error("Error updating profile:", err);
+      setError("Failed to update profile");
+    }
+  };
+
+  const handleProfilePictureChange = (
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    if (e.target.files && e.target.files.length > 0) {
+      const file = e.target.files[0];
+
+      // Preview the selected file
+      setProfile((prev) => ({
+        ...prev,
+        profileImage: URL.createObjectURL(file),
+        profileImageFile: file, // Store the file for later upload
+      }));
+    }
   };
 
   return (
@@ -45,225 +197,251 @@ const ProfilePage = () => {
       {user ? (
         <>
           <NavBar />
-          <div className="min-h-screen flex items-center justify-center p-4">
-            <div className="w-full max-w-4xl bg-white rounded-xl shadow-lg overflow-hidden">
-              <div className="p-8">
-                {/* Header section */}
-                <div className="flex flex-col md:flex-row items-center gap-8 mb-8">
-                  {/* Profile image */}
-                  <div className="relative">
-                    <div className="h-32 w-32 rounded-full bg-gray-200 overflow-hidden border-4 border-white shadow-md">
-                      <img
-                        src={profile.profileImage}
-                        alt={`${profile.firstName} ${profile.lastName}`}
-                        className="h-full w-full object-cover"
-                      />
-                    </div>
-                    {isEditing && (
-                      <button className="absolute bottom-0 right-0 bg-indigo-600 text-white p-2 rounded-full shadow-lg hover:bg-indigo-700 transition-colors">
-                        <FaCamera className="h-4 w-4" />
-                      </button>
-                    )}
-                  </div>
-
-                  {/* User info */}
-                  <div className="flex-1 text-center md:text-left">
-                    {isEditing ? (
-                      <div className="space-y-3">
-                        <div className="flex gap-3">
+          <div className="min-h-screen flex items-start justify-center p-4 bg-gradient-to-r from-[#c549d4] to-[#9b36b7]">
+            <div className="w-full max-w-4xl bg-[#151316] rounded-xl shadow-lg overflow-hidden text-white">
+              {isLoading ? (
+                <div className="p-8 flex justify-center items-center h-64">
+                  <p>Loading profile data...</p>
+                </div>
+              ) : (
+                <div className="p-8">
+                  {/* Header section */}
+                  <div className="flex flex-col md:flex-row items-center gap-8 mb-8">
+                    {/* Profile image */}
+                    <div className="relative">
+                      <div className="h-32 w-32 rounded-full bg-gray-800 overflow-hidden border-4 border-[#2a2a2d] shadow-md">
+                        <img
+                          src={profile.profileImage}
+                          alt={`${userInfo?.first_name || "User"} ${
+                            userInfo?.last_name || ""
+                          }`}
+                          className="h-full w-full object-cover"
+                          onError={(e) => {
+                            e.currentTarget.src = defaultProfileImage;
+                          }}
+                        />
+                      </div>
+                      {isEditing && (
+                        <label className="absolute bottom-0 right-0 bg-purple-600 text-white p-2 rounded-full shadow-lg hover:bg-purple-700 transition-colors cursor-pointer">
+                          <FaCamera className="h-4 w-4" />
                           <input
-                            type="text"
-                            name="firstName"
-                            value={userInfo.first_name}
-                            onChange={handleInputChange}
-                            className="px-3 py-2 flex-1 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                            placeholder="First Name"
+                            type="file"
+                            accept="image/*"
+                            className="hidden"
+                            onChange={handleProfilePictureChange}
                           />
+                        </label>
+                      )}
+                    </div>
+
+                    {/* User info */}
+                    <div className="flex-1 text-center md:text-left">
+                      {isEditing ? (
+                        <div className="space-y-3">
+                          <div className="flex gap-3">
+                            <input
+                              type="text"
+                              name="firstName"
+                              value={profile.firstName}
+                              onChange={handleInputChange}
+                              className="px-3 py-2 flex-1 border border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 bg-[#232126] text-white"
+                              placeholder="First Name"
+                            />
+                            <input
+                              type="text"
+                              name="lastName"
+                              value={profile.lastName}
+                              onChange={handleInputChange}
+                              className="px-3 py-2 flex-1 border border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 bg-[#232126] text-white"
+                              placeholder="Last Name"
+                            />
+                          </div>
                           <input
                             type="text"
-                            name="lastName"
-                            value={userInfo.last_name}
+                            name="username"
+                            value={profile.username}
                             onChange={handleInputChange}
-                            className="px-3 py-2 flex-1 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                            placeholder="Last Name"
+                            className="px-3 py-2 w-full border border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 bg-[#232126] text-white"
+                            placeholder="Username"
                           />
                         </div>
-                        <input
-                          type="text"
-                          name="username"
-                          value={userInfo.username}
-                          onChange={handleInputChange}
-                          className="px-3 py-2 w-full border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                          placeholder="Username"
-                        />
-                      </div>
-                    ) : (
-                      <>
-                        <h1 className="text-3xl font-bold text-gray-800">
-                          {userInfo.first_name} {userInfo.last_name}
-                        </h1>
-                        <p className="text-lg text-gray-500">
-                          @{userInfo.username}
-                        </p>
-                      </>
-                    )}
+                      ) : (
+                        <>
+                          <h1 className="text-3xl font-bold text-white">
+                            {userInfo?.first_name} {userInfo?.last_name}
+                          </h1>
+                          <p className="text-lg text-gray-400">
+                            @{userInfo?.username}
+                          </p>
+                        </>
+                      )}
 
-                    {/* Stats */}
-                    <div className="flex justify-center md:justify-start gap-6 mt-4">
-                      <div className="text-center">
-                        <p className="text-xl font-semibold text-gray-800">
-                          {profile.followers}
-                        </p>
-                        <p className="text-sm text-gray-500">Followers</p>
-                      </div>
-                      <div className="text-center">
-                        <p className="text-xl font-semibold text-gray-800">
-                          {profile.favorites}
-                        </p>
-                        <p className="text-sm text-gray-500">Likes</p>
-                      </div>
-                      <div className="text-center">
-                        <p className="text-xl font-semibold text-gray-800">
-                          {profile.albums}
-                        </p>
-                        <p className="text-sm text-gray-500">Albums</p>
+                      {/* Stats */}
+                      <div className="flex justify-center md:justify-start gap-6 mt-4">
+                        <div className="text-center">
+                          <p className="text-xl font-semibold text-white">
+                            {followersCount}
+                          </p>
+                          <p className="text-sm text-gray-400">Followers</p>
+                        </div>
+                        <div className="text-center">
+                          <p className="text-xl font-semibold text-white">
+                            {likesCount}
+                          </p>
+                          <p className="text-sm text-gray-400">Likes</p>
+                        </div>
+                        <div className="text-center">
+                          <p className="text-xl font-semibold text-white">
+                            {playlistsCount}
+                          </p>
+                          <p className="text-sm text-gray-400">Playlists</p>
+                        </div>
                       </div>
                     </div>
-                  </div>
 
-                  {/* Action buttons */}
-                  <div className="flex flex-col gap-3">
-                    {isEditing ? (
-                      <>
-                        <button
-                          onClick={handleSave}
-                          className="bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2 px-4 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
-                        >
-                          Save Changes
-                        </button>
+                    {/* Action buttons */}
+                    <div className="flex flex-col gap-3">
+                      {isEditing ? (
+                        <>
+                          <button
+                            onClick={handleSave}
+                            className="bg-purple-600 hover:bg-purple-700 text-white font-medium py-2 px-4 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 focus:ring-offset-[#151316]"
+                          >
+                            Save Changes
+                          </button>
+                          <button
+                            onClick={handleEditToggle}
+                            className="border border-gray-600 text-gray-300 font-medium py-2 px-4 rounded-md hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 focus:ring-offset-[#151316]"
+                          >
+                            Cancel
+                          </button>
+                        </>
+                      ) : (
                         <button
                           onClick={handleEditToggle}
-                          className="border border-gray-300 text-gray-700 font-medium py-2 px-4 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+                          className="flex items-center justify-center gap-2 bg-purple-600 hover:bg-purple-700 text-white font-medium py-2 px-4 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 focus:ring-offset-[#151316]"
                         >
-                          Cancel
+                          <MdEdit className="h-4 w-4" />
+                          Edit Profile
                         </button>
-                      </>
-                    ) : (
-                      <button
-                        onClick={handleEditToggle}
-                        className="flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2 px-4 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
-                      >
-                        <MdEdit className="h-4 w-4" />
-                        Edit Profile
-                      </button>
-                    )}
-                  </div>
-                </div>
-
-                {/* Divider */}
-                <div className="border-t border-gray-200 my-6"></div>
-
-                {/* Details section */}
-                <div className="space-y-6">
-                  <h2 className="text-xl font-semibold text-gray-800 mb-4">
-                    Account Details
-                  </h2>
-
-                  {/* Email */}
-                  <div className="flex flex-col md:flex-row md:items-center gap-2 md:gap-4">
-                    <div className="w-full md:w-1/3">
-                      <div className="flex items-center gap-2 text-gray-700">
-                        <CiAt className="h-5 w-5 text-gray-500" />
-                        <span className="font-medium">Email</span>
-                      </div>
-                    </div>
-                    <div className="w-full md:w-2/3">
-                      {isEditing ? (
-                        <input
-                          type="email"
-                          name="email"
-                          value={userInfo.email}
-                          onChange={handleInputChange}
-                          className="px-3 py-2 w-full border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                          placeholder="Email"
-                        />
-                      ) : (
-                        <p className="text-gray-800">{userInfo.email}</p>
                       )}
                     </div>
                   </div>
 
-                  {/* Password */}
-                  <div className="flex flex-col md:flex-row md:items-center gap-2 md:gap-4">
-                    <div className="w-full md:w-1/3">
-                      <div className="flex items-center gap-2 text-gray-700">
-                        <CiLock className="h-5 w-5 text-gray-500" />
-                        <span className="font-medium">Password</span>
-                      </div>
-                    </div>
-                    <div className="w-full md:w-2/3">
-                      <button className="text-indigo-600 hover:text-indigo-800 font-medium focus:outline-none">
-                        Reset Password
-                      </button>
-                    </div>
-                  </div>
+                  {/* Divider */}
+                  <div className="border-t border-gray-700 my-6"></div>
 
-                  {/* Account content summary */}
-                  <div className="border-t border-gray-200 pt-6 mt-6">
-                    <h2 className="text-xl font-semibold text-gray-800 mb-4">
-                      Content Summary
+                  {/* Details section */}
+                  <div className="space-y-6">
+                    <h2 className="text-xl font-semibold text-white mb-4">
+                      Account Details
                     </h2>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      <div className="bg-gray-50 p-4 rounded-lg border border-gray-100">
-                        <div className="flex items-center gap-3 mb-2">
-                          <div className="p-2 bg-purple-100 rounded-full">
-                            <FaUsers className="h-5 w-5 text-purple-600" />
-                          </div>
-                          <h3 className="font-medium text-gray-800">
-                            Followers
-                          </h3>
-                        </div>
-                        <p className="text-2xl font-bold text-gray-800">
-                          {profile.followers}
-                        </p>
-                        <p className="text-sm text-gray-500">
-                          People following you
-                        </p>
-                      </div>
 
-                      <div className="bg-gray-50 p-4 rounded-lg border border-gray-100">
-                        <div className="flex items-center gap-3 mb-2">
-                          <div className="p-2 bg-pink-100 rounded-full">
-                            <CiHeart className="h-5 w-5 text-pink-600" />
-                          </div>
-                          <h3 className="font-medium text-gray-800">
-                            Favorites
-                          </h3>
+                    {/* Email */}
+                    <div className="flex flex-col md:flex-row md:items-center gap-2 md:gap-4">
+                      <div className="w-full md:w-1/3">
+                        <div className="flex items-center gap-2 text-gray-300">
+                          <CiAt className="h-5 w-5 text-gray-400" />
+                          <span className="font-medium">Email</span>
                         </div>
-                        <p className="text-2xl font-bold text-gray-800">
-                          {profile.favorites}
-                        </p>
-                        <p className="text-sm text-gray-500">Items you liked</p>
                       </div>
+                      <div className="w-full md:w-2/3">
+                        {isEditing ? (
+                          <input
+                            type="email"
+                            name="email"
+                            value={profile.email}
+                            onChange={handleInputChange}
+                            className="px-3 py-2 w-full border border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 bg-[#232126] text-white"
+                            placeholder="Email"
+                          />
+                        ) : (
+                          <p className="text-white">{userInfo?.email}</p>
+                        )}
+                      </div>
+                    </div>
 
-                      <div className="bg-gray-50 p-4 rounded-lg border border-gray-100">
-                        <div className="flex items-center gap-3 mb-2">
-                          <div className="p-2 bg-blue-100 rounded-full">
-                            <CiBoxList className="h-5 w-5 text-blue-600" />
-                          </div>
-                          <h3 className="font-medium text-gray-800">Albums</h3>
+                    {/* Password */}
+                    <div className="flex flex-col md:flex-row md:items-center gap-2 md:gap-4">
+                      <div className="w-full md:w-1/3">
+                        <div className="flex items-center gap-2 text-gray-300">
+                          <CiLock className="h-5 w-5 text-gray-400" />
+                          <span className="font-medium">Password</span>
                         </div>
-                        <p className="text-2xl font-bold text-gray-800">
-                          {profile.albums}
-                        </p>
-                        <p className="text-sm text-gray-500">
-                          Collections created
-                        </p>
+                      </div>
+                      <div className="w-full md:w-2/3">
+                        <button className="text-purple-400 hover:text-purple-300 font-medium focus:outline-none">
+                          Reset Password
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Account content summary */}
+                    <div className="border-t border-gray-700 pt-6 mt-6">
+                      <h2 className="text-xl font-semibold text-white mb-4">
+                        Content Summary
+                      </h2>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div className="bg-[#232126] p-4 rounded-lg border border-gray-700">
+                          <div className="flex items-center gap-3 mb-2">
+                            <div className="p-2 bg-purple-900 rounded-full">
+                              <FaUsers className="h-5 w-5 text-purple-300" />
+                            </div>
+                            <h3 className="font-medium text-white">
+                              Followers
+                            </h3>
+                          </div>
+                          <p className="text-2xl font-bold text-white">
+                            {followersCount}
+                          </p>
+                          <p className="text-sm text-gray-400">
+                            People following you
+                          </p>
+                        </div>
+
+                        <div className="bg-[#232126] p-4 rounded-lg border border-gray-700">
+                          <div className="flex items-center gap-3 mb-2">
+                            <div className="p-2 bg-pink-900 rounded-full">
+                              <CiHeart className="h-5 w-5 text-pink-300" />
+                            </div>
+                            <h3 className="font-medium text-white">
+                              Favorites
+                            </h3>
+                          </div>
+                          <p className="text-2xl font-bold text-white">
+                            {likesCount}
+                          </p>
+                          <p className="text-sm text-gray-400">
+                            Items you liked
+                          </p>
+                        </div>
+
+                        <div className="bg-[#232126] p-4 rounded-lg border border-gray-700">
+                          <div className="flex items-center gap-3 mb-2">
+                            <div className="p-2 bg-blue-900 rounded-full">
+                              <CiBoxList className="h-5 w-5 text-blue-300" />
+                            </div>
+                            <h3 className="font-medium text-white">
+                              Playlists
+                            </h3>
+                          </div>
+                          <p className="text-2xl font-bold text-white">
+                            {playlistsCount}
+                          </p>
+                          <p className="text-sm text-gray-400">
+                            Collections created
+                          </p>
+                        </div>
                       </div>
                     </div>
                   </div>
                 </div>
-              </div>
+              )}
+              {error && (
+                <div className="p-4 bg-red-900 border border-red-700 text-red-200 rounded m-4">
+                  {error}
+                </div>
+              )}
             </div>
           </div>
         </>

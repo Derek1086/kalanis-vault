@@ -1,6 +1,14 @@
 from rest_framework import serializers
-from .models import Playlist, Video, UserFollow
+from .models import Playlist, Video, UserFollow, Tag
 from users.serializers import CreateUserSerializer
+
+class TagSerializer(serializers.ModelSerializer):
+    """
+    Serializer for the Tag model.
+    """
+    class Meta:
+        model = Tag
+        fields = ['id', 'name']
 
 class VideoSerializer(serializers.ModelSerializer):
     """
@@ -8,7 +16,8 @@ class VideoSerializer(serializers.ModelSerializer):
     """
     class Meta:
         model = Video
-        fields = ['id', 'title', 'tiktok_url', 'tiktok_id', 'thumbnail_url', 'playlist', 'added_at', 'order']
+        fields = ['id', 'title', 'tiktok_url', 'tiktok_id', 'thumbnail_url', 
+                 'custom_thumbnail', 'playlist', 'added_at', 'order']
         read_only_fields = ['added_at']
 
 
@@ -24,9 +33,11 @@ class PlaylistSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = Playlist
-        fields = ['id', 'title', 'description', 'cover_image', 'user', 'created_at', 
-                 'updated_at', 'is_public', 'videos', 'like_count', 'video_count', 'is_liked']
-        read_only_fields = ['created_at', 'updated_at', 'user']
+        fields = ['id', 'title', 'description', 'cover_image', 
+                 'user', 'created_at', 'updated_at', 'is_public', 'videos', 
+                 'like_count', 'video_count', 'is_liked', 'view_count', 'share_count',
+                 'tags']
+        read_only_fields = ['created_at', 'updated_at', 'user', 'view_count', 'share_count']
     
     def get_is_liked(self, obj):
         """Check if the current user has liked this playlist"""
@@ -35,21 +46,61 @@ class PlaylistSerializer(serializers.ModelSerializer):
             return request.user in obj.likes.all()
         return False
 
-
 class PlaylistCreateSerializer(serializers.ModelSerializer):
     """
     Serializer for creating playlists.
     """
+    # Add a custom field for tags that can accept a list of strings
+    tags = serializers.ListField(
+        child=serializers.CharField(max_length=50),
+        required=False,
+        write_only=True
+    )
+    
     class Meta:
         model = Playlist
-        fields = ['id', 'title', 'description', 'cover_image', 'is_public']
+        fields = ['id', 'title', 'description', 'cover_image', 'is_public', 'tags']
     
     def create(self, validated_data):
-        """Add the current user to the playlist data"""
+        """Add the current user to the playlist data and handle tags"""
+        # Extract tags from validated data
+        tags_data = validated_data.pop('tags', [])
+        
+        # Create playlist without tags
         user = self.context['request'].user
         playlist = Playlist.objects.create(user=user, **validated_data)
+        
+        # Add tags to playlist
+        self._add_tags_to_playlist(playlist, tags_data)
+        
         return playlist
 
+    def update(self, instance, validated_data):
+        """Handle updating playlist and tags"""
+        # Extract tags from validated data
+        tags_data = validated_data.pop('tags', None)
+        
+        # Update playlist fields
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        instance.save()
+        
+        # Update tags if provided
+        if tags_data is not None:
+            instance.tags.clear()
+            self._add_tags_to_playlist(instance, tags_data)
+        
+        return instance
+    
+    def _add_tags_to_playlist(self, playlist, tags_data):
+        """Helper method to add tags to a playlist"""
+        if not tags_data:
+            return
+            
+        for tag_name in tags_data:
+            if isinstance(tag_name, str):
+                tag, created = Tag.objects.get_or_create(name=tag_name.strip().lower())
+                playlist.tags.add(tag)
 
 class UserFollowSerializer(serializers.ModelSerializer):
     """

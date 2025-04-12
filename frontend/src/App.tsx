@@ -9,6 +9,7 @@ import ResetPasswordPage from "./pages/ResetPasswordPage";
 import ResetPasswordPageConfirm from "./pages/ResetPasswordPageConfirm";
 import ProfilePage from "./pages/ProfilePage";
 import MyPlaylists from "./pages/MyPlaylists";
+import PlaylistPage from "./pages/PlaylistPage";
 
 function App() {
   return (
@@ -26,6 +27,10 @@ function App() {
           />
           <Route path="/:username/profile" element={<ProfilePage />} />
           <Route path="/:username/playlists" element={<MyPlaylists />} />
+          <Route
+            path="/:username/playlists/:playlistId"
+            element={<PlaylistPage />}
+          />
           <Route path="*" element={<NotFoundPage />} />
         </Routes>
       </Router>

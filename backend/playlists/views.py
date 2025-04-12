@@ -2,14 +2,40 @@ from rest_framework import viewsets, status, filters
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
-from .models import Playlist, Video, UserFollow
+from .models import Playlist, Video, UserFollow, Tag
 from .serializers import (
     PlaylistSerializer, 
     PlaylistCreateSerializer,
     VideoSerializer, 
-    UserFollowSerializer
+    UserFollowSerializer, 
+    TagSerializer
 )
 from .permissions import IsOwnerOrReadOnly
+from django.db.models import Q, F
+from users.models import User
+
+class TagViewSet(viewsets.ModelViewSet):
+    """
+    ViewSet for managing tags.
+    """
+    queryset = Tag.objects.all()
+    serializer_class = TagSerializer
+    permission_classes = [IsAuthenticated]
+    filter_backends = [filters.SearchFilter]
+    search_fields = ['name']
+    
+    @action(detail=False, methods=['get'])
+    def autocomplete(self, request):
+        """
+        API endpoint that allows autocomplete for tags.
+        """
+        query = request.query_params.get('q', '')
+        if len(query) < 2:  # Require at least 2 characters for autocomplete
+            return Response([])
+            
+        tags = Tag.objects.filter(name__icontains=query)[:10]  # Limit to 10 results
+        serializer = self.get_serializer(tags, many=True)
+        return Response(serializer.data)
 
 class PlaylistViewSet(viewsets.ModelViewSet):
     """
@@ -18,25 +44,47 @@ class PlaylistViewSet(viewsets.ModelViewSet):
     serializer_class = PlaylistSerializer
     permission_classes = [IsAuthenticated, IsOwnerOrReadOnly]
     filter_backends = [filters.SearchFilter, filters.OrderingFilter]
-    search_fields = ['title', 'description']
-    ordering_fields = ['created_at', 'updated_at', 'title']
+    search_fields = ['title', 'description', 'tags__name']
+    ordering_fields = ['created_at', 'updated_at', 'title', 'view_count', 'share_count']
     
     def get_queryset(self):
         """
         Return public playlists and the user's private playlists.
+        Filter by tag if requested.
         """
         user = self.request.user
-        return Playlist.objects.filter(
-            models.Q(is_public=True) | models.Q(user=user)
-        ).prefetch_related('videos', 'likes')
+        queryset = Playlist.objects.filter(
+            Q(is_public=True) | Q(user=user)
+        ).prefetch_related('videos', 'likes', 'tags')
+        
+        # Filter by tag if provided
+        tag = self.request.query_params.get('tag', None)
+        if tag:
+            queryset = queryset.filter(tags__name=tag)
+            
+        return queryset
     
     def get_serializer_class(self):
         """
-        Use different serializers for list/retrieve and create actions.
+        Use different serializers for list/retrieve and create/update actions.
         """
-        if self.action == 'create':
+        if self.action in ['create', 'update', 'partial_update']:
             return PlaylistCreateSerializer
         return PlaylistSerializer
+    
+    def retrieve(self, request, *args, **kwargs):
+        """
+        Increment view count when a playlist is viewed.
+        """
+        instance = self.get_object()
+        # Only count views from users other than the owner
+        if request.user != instance.user:
+            instance.view_count = F('view_count') + 1
+            instance.save(update_fields=['view_count'])
+            instance.refresh_from_db()
+        
+        serializer = self.get_serializer(instance)
+        return Response(serializer.data)
     
     @action(detail=True, methods=['post'])
     def like(self, request, pk=None):
@@ -52,6 +100,21 @@ class PlaylistViewSet(viewsets.ModelViewSet):
         else:
             playlist.likes.add(user)
             return Response({'status': 'liked'})
+    
+    @action(detail=True, methods=['post'])
+    def share(self, request, pk=None):
+        """
+        Increment share count for a playlist.
+        """
+        playlist = self.get_object()
+        playlist.share_count = F('share_count') + 1
+        playlist.save(update_fields=['share_count'])
+        playlist.refresh_from_db()
+        
+        return Response({
+            'status': 'shared',
+            'share_count': playlist.share_count
+        })
     
     @action(detail=False, methods=['get'])
     def my_playlists(self, request):
@@ -70,7 +133,22 @@ class PlaylistViewSet(viewsets.ModelViewSet):
         queryset = request.user.liked_playlists.all()
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
-
+    
+    @action(detail=False, methods=['get'])
+    def by_tag(self, request):
+        """
+        Return playlists filtered by tag name.
+        """
+        tag_name = request.query_params.get('tag', None)
+        if not tag_name:
+            return Response(
+                {'detail': 'Tag parameter is required.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+            
+        queryset = self.get_queryset().filter(tags__name=tag_name)
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data)
 
 class VideoViewSet(viewsets.ModelViewSet):
     """
@@ -85,7 +163,7 @@ class VideoViewSet(viewsets.ModelViewSet):
         """
         user = self.request.user
         return Video.objects.filter(
-            models.Q(playlist__is_public=True) | models.Q(playlist__user=user)
+            Q(playlist__is_public=True) | Q(playlist__user=user)
         )
     
     def perform_create(self, serializer):
@@ -122,7 +200,7 @@ class UserFollowViewSet(viewsets.ModelViewSet):
         """
         user = self.request.user
         return UserFollow.objects.filter(
-            models.Q(follower=user) | models.Q(followed=user)
+            Q(follower=user) | Q(followed=user)
         )
     
     def perform_create(self, serializer):

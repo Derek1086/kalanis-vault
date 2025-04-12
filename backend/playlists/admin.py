@@ -1,12 +1,19 @@
 from django.contrib import admin
-from .models import Playlist, Video, UserFollow
+from .models import Playlist, Video, UserFollow, Tag
+
+@admin.register(Tag)
+class TagAdmin(admin.ModelAdmin):
+    list_display = ['name', 'created_at']
+    search_fields = ['name']
+    readonly_fields = ['created_at']
 
 @admin.register(Playlist)
 class PlaylistAdmin(admin.ModelAdmin):
-    list_display = ['title', 'user', 'created_at', 'is_public', 'video_count', 'like_count']
-    list_filter = ['is_public', 'created_at', 'updated_at']
+    list_display = ['title', 'user', 'created_at', 'is_public', 'video_count', 'like_count', 'view_count', 'share_count']
+    list_filter = ['is_public', 'created_at', 'updated_at', 'tags']
     search_fields = ['title', 'description', 'user__username', 'user__email']
-    readonly_fields = ['created_at', 'updated_at']
+    readonly_fields = ['created_at', 'updated_at', 'view_count', 'share_count']
+    filter_horizontal = ['tags']
 
 @admin.register(Video)
 class VideoAdmin(admin.ModelAdmin):

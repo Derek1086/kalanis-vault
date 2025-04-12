@@ -24,9 +24,9 @@ class User(AbstractBaseUser, PermissionsMixin):
         _("Profile Picture"), 
         upload_to="profile_pics/",
         default="profile_pics/default.png",
-        blank=True, 
-        null=True
+        blank=True
     )
+    
     is_staff = models.BooleanField(default=False)
     is_active = models.BooleanField(default=False)
     date_joined = models.DateTimeField(auto_now_add=True)
