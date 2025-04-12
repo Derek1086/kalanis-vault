@@ -1,6 +1,8 @@
 import { useSelector, useDispatch } from "react-redux";
+import { useNavigate } from "react-router-dom";
 import { RootState } from "../app/store.tsx";
 import { useState, useEffect } from "react";
+import { getUserInfo } from "../features/auth/authSlice.ts";
 import axios from "axios";
 import NavBar from "../components/Navigation/NavBar.tsx";
 
@@ -11,7 +13,6 @@ import { MdEdit } from "react-icons/md";
 const BACKEND_DOMAIN =
   import.meta.env.VITE_BACKEND_DOMAIN || "http://localhost:8000";
 
-// Define the playlist interface based on your API response
 interface PlaylistData {
   id: number;
   title: string;
@@ -24,6 +25,7 @@ interface PlaylistData {
 
 const ProfilePage = () => {
   const dispatch = useDispatch();
+  const navigate = useNavigate();
   const { user, userInfo } = useSelector((state: RootState) => state.auth);
 
   const [isEditing, setIsEditing] = useState(false);
@@ -33,7 +35,6 @@ const ProfilePage = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Update the default profile image path
   const defaultProfileImage = `${BACKEND_DOMAIN}/media/profile_pics/default.png`;
 
   const [profile, setProfile] = useState({
@@ -51,6 +52,12 @@ const ProfilePage = () => {
   }, [user]);
 
   useEffect(() => {
+    if (user && Object.keys(userInfo || {}).length === 0) {
+      dispatch(getUserInfo() as any);
+    }
+  }, [user, userInfo, dispatch]);
+
+  useEffect(() => {
     if (userInfo) {
       setProfile((prev) => ({
         ...prev,
@@ -58,7 +65,6 @@ const ProfilePage = () => {
         lastName: userInfo.last_name || prev.lastName,
         username: userInfo.username || prev.username,
         email: userInfo.email || prev.email,
-        // Use the profile_picture from userInfo if available, otherwise use the default
         profileImage: userInfo.profile_picture
           ? `${BACKEND_DOMAIN}${userInfo.profile_picture}`
           : defaultProfileImage,
@@ -71,7 +77,6 @@ const ProfilePage = () => {
     setError(null);
 
     try {
-      // Get token from Redux state or localStorage as fallback
       const token =
         user?.access || localStorage.getItem("user")
           ? JSON.parse(localStorage.getItem("user") || "{}").access
@@ -83,7 +88,6 @@ const ProfilePage = () => {
         return;
       }
 
-      // Fetch playlists
       const playlistsResponse = await axios.get<PlaylistData[]>(
         `${BACKEND_DOMAIN}/api/v1/playlists/my_playlists/`,
         {
@@ -94,7 +98,6 @@ const ProfilePage = () => {
       );
       setPlaylistsCount(playlistsResponse.data.length);
 
-      // Fetch liked playlists (to get likes count)
       const likedPlaylistsResponse = await axios.get<PlaylistData[]>(
         `${BACKEND_DOMAIN}/api/v1/playlists/liked_playlists/`,
         {
@@ -105,7 +108,6 @@ const ProfilePage = () => {
       );
       setLikesCount(likedPlaylistsResponse.data.length);
 
-      // Fetch followers
       const followersResponse = await axios.get(
         `${BACKEND_DOMAIN}/api/v1/follows/`,
         {
@@ -115,7 +117,6 @@ const ProfilePage = () => {
         }
       );
 
-      // Count followers where current user is being followed
       const followers = followersResponse.data.filter(
         (follow: any) => follow.followed === userInfo.id
       );
@@ -154,14 +155,12 @@ const ProfilePage = () => {
         return;
       }
 
-      // Create form data to handle possible file uploads
       const formData = new FormData();
       formData.append("first_name", profile.firstName);
       formData.append("last_name", profile.lastName);
       formData.append("username", profile.username);
       formData.append("email", profile.email);
 
-      // Make API call to update profile
       await axios.patch(`${BACKEND_DOMAIN}/api/v1/users/me/`, formData, {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -370,7 +369,10 @@ const ProfilePage = () => {
                         </div>
                       </div>
                       <div className="w-full md:w-2/3">
-                        <button className="text-purple-400 hover:text-purple-300 font-medium focus:outline-none">
+                        <button
+                          onClick={() => navigate("/reset-password")}
+                          className="bg-red-600 hover:bg-red-700 text-white font-medium py-2 px-4 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 focus:ring-offset-[#151316]"
+                        >
                           Reset Password
                         </button>
                       </div>
@@ -412,7 +414,7 @@ const ProfilePage = () => {
                             {likesCount}
                           </p>
                           <p className="text-sm text-gray-400">
-                            Items you liked
+                            Playlists you liked
                           </p>
                         </div>
 
@@ -429,7 +431,7 @@ const ProfilePage = () => {
                             {playlistsCount}
                           </p>
                           <p className="text-sm text-gray-400">
-                            Collections created
+                            Playlists created
                           </p>
                         </div>
                       </div>

@@ -309,7 +309,7 @@ const NewPlaylist: React.FC<NewPlaylistProps> = ({
 
       onClose();
 
-      toast.success("Playlist created successfully", {
+      toast.success(`Created "${playlistName}"`, {
         theme: "dark",
       });
 

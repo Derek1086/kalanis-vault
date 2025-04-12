@@ -7,7 +7,7 @@ import { AppDispatch, RootState } from "../app/store";
 
 import { Card } from "../components/Container";
 import { Header, SecondaryText } from "../components/Typography";
-import { PrimaryButton } from "../components/Button";
+import { PrimaryButton, SecondaryButton } from "../components/Button"; // Make sure SecondaryButton exists or use PrimaryButton again
 import { IconInputField } from "../components/Input";
 
 import { CiAt } from "react-icons/ci";
@@ -82,6 +82,12 @@ const ResetPasswordPage = () => {
             Reset Password
           </PrimaryButton>
         </form>
+
+        <div className="text-center">
+          <SecondaryButton onClick={() => navigate("/")}>
+            Go Home
+          </SecondaryButton>
+        </div>
       </Card>
     </>
   );
