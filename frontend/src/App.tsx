@@ -9,7 +9,9 @@ import ResetPasswordPage from "./pages/ResetPasswordPage";
 import ResetPasswordPageConfirm from "./pages/ResetPasswordPageConfirm";
 import ProfilePage from "./pages/ProfilePage";
 import MyPlaylists from "./pages/MyPlaylists";
+import LikedPlaylists from "./pages/LikedPlaylists";
 import PlaylistPage from "./pages/PlaylistPage";
+import SearchPage from "./pages/SearchPage";
 
 function App() {
   return (
@@ -28,9 +30,14 @@ function App() {
           <Route path="/:username/profile" element={<ProfilePage />} />
           <Route path="/:username/playlists" element={<MyPlaylists />} />
           <Route
+            path="/:username/liked-playlists"
+            element={<LikedPlaylists />}
+          />
+          <Route
             path="/:username/playlists/:playlistId"
             element={<PlaylistPage />}
           />
+          <Route path="/search/:query" element={<SearchPage />} />
           <Route path="*" element={<NotFoundPage />} />
         </Routes>
       </Router>

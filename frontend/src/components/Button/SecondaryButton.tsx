@@ -9,6 +9,7 @@ interface SecondaryButtonProps {
   className?: string;
   children: React.ReactNode;
   onClick?: () => void;
+  disabled?: boolean;
 }
 
 export const SecondaryButton: React.FC<SecondaryButtonProps> = ({
@@ -16,6 +17,7 @@ export const SecondaryButton: React.FC<SecondaryButtonProps> = ({
   className = "",
   children,
   onClick = () => {},
+  disabled = false,
 }) => {
   return (
     <button

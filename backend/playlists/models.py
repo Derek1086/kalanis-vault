@@ -1,6 +1,8 @@
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 from users.models import User
+import os
+from django.conf import settings
 
 class Tag(models.Model):
     """
@@ -58,6 +60,33 @@ class Playlist(models.Model):
         """Returns the number of likes for this playlist"""
         return self.likes.count()
 
+    def delete(self, *args, **kwargs):
+        """
+        Override delete method to handle cleanup of associated resources:
+        - Delete cover image file (if not default)
+        - Delete videos and their custom thumbnails
+        - Remove tag associations (but don't delete the tags themselves)
+        """
+        # Delete cover image file if it exists and is not the default
+        if self.cover_image and not self.cover_image.name.endswith('default.png'):
+            image_path = os.path.join(settings.MEDIA_ROOT, self.cover_image.name)
+            if os.path.isfile(image_path):
+                os.remove(image_path)
+        
+        # Get all videos to delete their custom thumbnails
+        videos = self.videos.all()
+        for video in videos:
+            if video.custom_thumbnail:
+                thumbnail_path = os.path.join(settings.MEDIA_ROOT, video.custom_thumbnail.name)
+                if os.path.isfile(thumbnail_path):
+                    os.remove(thumbnail_path)
+        
+        # Clear tag associations (don't delete the tags themselves)
+        self.tags.clear()
+        
+        # Call the parent delete() method to handle the actual deletion
+        super().delete(*args, **kwargs)
+
 
 class Video(models.Model):
     """
@@ -84,6 +113,17 @@ class Video(models.Model):
     
     def __str__(self):
         return f"Video {self.tiktok_id} in {self.playlist.title}"
+    
+    def delete(self, *args, **kwargs):
+        """
+        Override delete method to clean up custom thumbnail if it exists
+        """
+        if self.custom_thumbnail:
+            thumbnail_path = os.path.join(settings.MEDIA_ROOT, self.custom_thumbnail.name)
+            if os.path.isfile(thumbnail_path):
+                os.remove(thumbnail_path)
+                
+        super().delete(*args, **kwargs)
 
 
 class UserFollow(models.Model):

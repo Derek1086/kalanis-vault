@@ -23,19 +23,6 @@ class TagViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
     filter_backends = [filters.SearchFilter]
     search_fields = ['name']
-    
-    @action(detail=False, methods=['get'])
-    def autocomplete(self, request):
-        """
-        API endpoint that allows autocomplete for tags.
-        """
-        query = request.query_params.get('q', '')
-        if len(query) < 2:  # Require at least 2 characters for autocomplete
-            return Response([])
-            
-        tags = Tag.objects.filter(name__icontains=query)[:10]  # Limit to 10 results
-        serializer = self.get_serializer(tags, many=True)
-        return Response(serializer.data)
 
 class PlaylistViewSet(viewsets.ModelViewSet):
     """
@@ -57,7 +44,6 @@ class PlaylistViewSet(viewsets.ModelViewSet):
             Q(is_public=True) | Q(user=user)
         ).prefetch_related('videos', 'likes', 'tags')
         
-        # Filter by tag if provided
         tag = self.request.query_params.get('tag', None)
         if tag:
             queryset = queryset.filter(tags__name=tag)
@@ -101,6 +87,32 @@ class PlaylistViewSet(viewsets.ModelViewSet):
             playlist.likes.add(user)
             return Response({'status': 'liked'})
     
+    @action(detail=False, methods=['get'])
+    def search(self, request):
+        """
+        Search playlists by title, tags, description, or author's username.
+        """
+        query = request.query_params.get('q', None)
+        if not query:
+            return Response(
+                {'detail': 'Search query is required.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+            
+        user = request.user
+        queryset = Playlist.objects.filter(
+            Q(is_public=True) | Q(user=user)
+        ).filter(
+            Q(title__icontains=query) |
+            Q(tags__name__icontains=query) |
+            Q(description__icontains=query) |
+            Q(user__username__icontains=query)
+        ).distinct().prefetch_related('videos', 'likes', 'tags')
+        
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data)
+
+
     @action(detail=True, methods=['post'])
     def share(self, request, pk=None):
         """
@@ -179,7 +191,6 @@ class VideoViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_403_FORBIDDEN
             )
         
-        # Set the order to be the last position if not specified
         if 'order' not in self.request.data:
             order = playlist.videos.count()
             serializer.save(order=order)

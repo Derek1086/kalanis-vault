@@ -6,21 +6,19 @@ import { RootState } from "../app/store";
 import { getUserInfo } from "../features/auth/authSlice";
 import { Header, SecondaryText } from "../components/Typography";
 import { PrimaryButton } from "../components/Button";
-import NewPlaylist from "../components/Forms/NewPlaylist.tsx";
 import PlaylistCard from "../components/Playlists/PlaylistCard.tsx";
 import { AiOutlineLoading3Quarters } from "react-icons/ai";
 import { IoWarningOutline } from "react-icons/io5";
-import { IoMdAdd } from "react-icons/io";
+import { Link } from "react-router-dom";
 import { UserPlaylistData, BACKEND_DOMAIN } from "../types/playlists.ts";
 
-const MyPlaylists: React.FC = () => {
+const LikedPlaylists: React.FC = () => {
   const dispatch = useDispatch();
   const { user, userInfo } = useSelector((state: RootState) => state.auth);
 
   const [playlists, setPlaylists] = useState<UserPlaylistData[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
-  const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
 
   useEffect(() => {
     if (user && Object.keys(userInfo || {}).length === 0) {
@@ -30,13 +28,13 @@ const MyPlaylists: React.FC = () => {
 
   useEffect(() => {
     if (user) {
-      fetchPlaylists();
+      fetchLikedPlaylists();
     } else {
       setIsLoading(false);
     }
   }, [user]);
 
-  const fetchPlaylists = async (): Promise<void> => {
+  const fetchLikedPlaylists = async (): Promise<void> => {
     setIsLoading(true);
     setError(null);
 
@@ -47,13 +45,13 @@ const MyPlaylists: React.FC = () => {
           : null;
 
       if (!token) {
-        setError("You must be logged in to view your playlists");
+        setError("You must be logged in to view your liked playlists");
         setIsLoading(false);
         return;
       }
 
       const response = await axios.get<UserPlaylistData[]>(
-        `${BACKEND_DOMAIN}/api/v1/playlists/my_playlists/`,
+        `${BACKEND_DOMAIN}/api/v1/playlists/liked_playlists/`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -65,7 +63,7 @@ const MyPlaylists: React.FC = () => {
       setIsLoading(false);
     } catch (err) {
       setIsLoading(false);
-      console.error("Playlist fetch error:", err);
+      console.error("Liked playlists fetch error:", err);
 
       if (axios.isAxiosError(err) && err.response) {
         console.error("Response data:", err.response.data);
@@ -74,7 +72,7 @@ const MyPlaylists: React.FC = () => {
         if (err.response.status === 401) {
           setError("Your session has expired. Please log in again.");
         } else {
-          setError("Failed to load playlists. Please try again.");
+          setError("Failed to load liked playlists. Please try again.");
         }
       } else {
         setError("Network error. Please check your connection and try again.");
@@ -82,24 +80,8 @@ const MyPlaylists: React.FC = () => {
     }
   };
 
-  // Use any type to bypass the type checking issue
-  const handlePlaylistCreated = (newPlaylist: any): void => {
-    // Check if this is an update or a new playlist
-    const existingIndex = playlists.findIndex((p) => p.id === newPlaylist.id);
-
-    if (existingIndex >= 0) {
-      // Update existing playlist
-      const updatedPlaylists = [...playlists];
-      updatedPlaylists[existingIndex] = newPlaylist;
-      setPlaylists(updatedPlaylists);
-    } else {
-      // Add new playlist to the beginning of the list
-      setPlaylists([newPlaylist, ...playlists]);
-    }
-  };
-
-  const handlePlaylistDeleted = (playlistId: number): void => {
-    // Remove deleted playlist from state
+  // Update local state when a playlist is unliked
+  const handlePlaylistUnliked = (playlistId: number): void => {
     setPlaylists(playlists.filter((playlist) => playlist.id !== playlistId));
   };
 
@@ -107,22 +89,14 @@ const MyPlaylists: React.FC = () => {
     <>
       <NavBar />
 
-      <NewPlaylist
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        onPlaylistCreated={handlePlaylistCreated}
-      />
-
       <div className="container mx-auto p-6">
         <div className="flex justify-between items-center mb-6">
-          <Header text="My Playlists" />
-          <PrimaryButton
-            onClick={() => setIsModalOpen(true)}
-            className="flex items-center gap-2"
-          >
-            <IoMdAdd size={18} />
-            New Playlist
-          </PrimaryButton>
+          <Header text="Liked Playlists" />
+          <Link to="/explore">
+            <PrimaryButton className="flex items-center gap-2">
+              Explore Playlists
+            </PrimaryButton>
+          </Link>
         </div>
 
         {error && (
@@ -138,19 +112,17 @@ const MyPlaylists: React.FC = () => {
           </div>
         ) : playlists.length === 0 ? (
           <div className="text-center py-16 bg-gray-50 rounded-lg">
-            <div className="text-4xl mb-4">📂</div>
-            <Header text="No Playlists Yet" />
+            <div className="text-4xl mb-4">❤️</div>
+            <Header text="No Liked Playlists Yet" />
             <SecondaryText
-              text="Create your first playlist to get started!"
+              text="Explore and like playlists to save them here!"
               className="text-gray-400 mt-2"
             />
-            <PrimaryButton
-              onClick={() => setIsModalOpen(true)}
-              className="mt-6 flex items-center gap-2 mx-auto"
-            >
-              <IoMdAdd size={18} />
-              Create Playlist
-            </PrimaryButton>
+            <Link to="/explore">
+              <PrimaryButton className="mt-6 mx-auto">
+                Explore Playlists
+              </PrimaryButton>
+            </Link>
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
@@ -158,7 +130,8 @@ const MyPlaylists: React.FC = () => {
               <PlaylistCard
                 key={playlist.id}
                 playlist={playlist}
-                onDelete={handlePlaylistDeleted}
+                onUnlike={handlePlaylistUnliked}
+                isLiked={true}
               />
             ))}
           </div>
@@ -168,4 +141,4 @@ const MyPlaylists: React.FC = () => {
   );
 };
 
-export default MyPlaylists;
+export default LikedPlaylists;

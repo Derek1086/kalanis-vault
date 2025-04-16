@@ -11,7 +11,7 @@ class CreateUserView(generics.CreateAPIView):
     """API endpoint to register new users."""
     queryset = User.objects.all()
     serializer_class = CreateUserSerializer
-    permission_classes = [permissions.AllowAny]  # Allow anyone to register
+    permission_classes = [permissions.AllowAny] 
 
 
 class UserProfileView(generics.RetrieveUpdateAPIView):
@@ -19,7 +19,7 @@ class UserProfileView(generics.RetrieveUpdateAPIView):
     queryset = User.objects.all()
     serializer_class = CreateUserSerializer
     permission_classes = [permissions.IsAuthenticated]
-    parser_classes = [MultiPartParser, FormParser]  # Allows image uploads
+    parser_classes = [MultiPartParser, FormParser]  
 
     def get_object(self):
         """Retrieve the authenticated user's profile."""

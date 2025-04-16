@@ -5,23 +5,11 @@ import { useState, useEffect } from "react";
 import { getUserInfo } from "../features/auth/authSlice.ts";
 import axios from "axios";
 import NavBar from "../components/Navigation/NavBar.tsx";
+import { PlaylistData, BACKEND_DOMAIN } from "../types/playlists.ts";
 
 import { CiAt, CiLock, CiHeart, CiBoxList } from "react-icons/ci";
 import { FaUsers, FaCamera } from "react-icons/fa";
 import { MdEdit } from "react-icons/md";
-
-const BACKEND_DOMAIN =
-  import.meta.env.VITE_BACKEND_DOMAIN || "http://localhost:8000";
-
-interface PlaylistData {
-  id: number;
-  title: string;
-  description: string | null;
-  cover_image: string | null;
-  is_public: boolean;
-  video_count: number;
-  like_count: number;
-}
 
 const ProfilePage = () => {
   const dispatch = useDispatch();

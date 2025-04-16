@@ -14,6 +14,7 @@ interface SearchFieldProps {
   icon: React.ReactNode;
   className?: string;
   onClear?: () => void;
+  onKeyDown?: React.KeyboardEventHandler<HTMLInputElement>;
 }
 
 export const SearchField: React.FC<SearchFieldProps> = ({
@@ -25,6 +26,7 @@ export const SearchField: React.FC<SearchFieldProps> = ({
   icon,
   className = "",
   onClear,
+  onKeyDown,
 }) => {
   return (
     <div className="relative w-full">
@@ -36,6 +38,7 @@ export const SearchField: React.FC<SearchFieldProps> = ({
         placeholder={placeholder}
         name={name}
         onChange={onChange}
+        onKeyDown={onKeyDown}
         value={value}
         className={`pl-10 pr-12 py-2 w-full border-2 border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#c549d4] focus:border-[#c549d4] ${className}`}
       />

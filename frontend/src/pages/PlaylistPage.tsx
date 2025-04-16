@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { useParams, useNavigate, Link } from "react-router-dom";
-import { useSelector } from "react-redux";
+import { useSelector, useDispatch } from "react-redux";
 import { RootState } from "../app/store";
 import NavBar from "../components/Navigation/NavBar.tsx";
 import { Card } from "../components/Container";
@@ -10,40 +10,16 @@ import { PrimaryButton, SecondaryButton } from "../components/Button";
 import { AiOutlineLoading3Quarters } from "react-icons/ai";
 import { IoWarningOutline } from "react-icons/io5";
 import { IoMdAdd } from "react-icons/io";
-
-// Define the interfaces based on your API response
-interface PlaylistData {
-  id: number;
-  title: string;
-  description: string | null;
-  cover_image: string | null;
-  thumbnail: string | null;
-  is_public: boolean;
-  user: {
-    username: string;
-    id: number;
-  };
-  video_count: number;
-  like_count: number;
-  is_liked: boolean;
-  view_count: number;
-  share_count: number;
-  videos: VideoData[];
-}
-
-interface VideoData {
-  id: number;
-  title: string | null;
-  tiktok_url: string;
-  tiktok_id: string;
-  thumbnail_url: string | null;
-  custom_thumbnail: string | null;
-  added_at: string;
-  order: number;
-}
-
-const BACKEND_DOMAIN =
-  import.meta.env.VITE_BACKEND_DOMAIN || "http://localhost:8000";
+import EmbedVideo from "../components/Forms/EmbedVideo.tsx";
+import VideoCard from "../components/Playlists/VideoCard.tsx";
+import NewPlaylist from "../components/Forms/NewPlaylist.tsx";
+import { toast } from "react-toastify";
+import { getUserInfo } from "../features/auth/authSlice.ts";
+import {
+  UserPlaylistData,
+  VideoData,
+  BACKEND_DOMAIN,
+} from "../types/playlists.ts";
 
 const PlaylistPage: React.FC = () => {
   const { username, playlistId } = useParams<{
@@ -51,37 +27,66 @@ const PlaylistPage: React.FC = () => {
     playlistId: string;
   }>();
   const navigate = useNavigate();
+  const dispatch = useDispatch();
   const { user, userInfo } = useSelector((state: RootState) => state.auth);
 
-  const [playlist, setPlaylist] = useState<PlaylistData | null>(null);
+  const [isEmbedModalOpen, setIsEmbedModalOpen] = useState<boolean>(false);
+  const [playlist, setPlaylist] = useState<UserPlaylistData | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [isAddingVideo, setIsAddingVideo] = useState<boolean>(false);
   const [newVideoUrl, setNewVideoUrl] = useState<string>("");
   const [newVideoTitle, setNewVideoTitle] = useState<string>("");
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState<boolean>(false);
+  const [isDeleting, setIsDeleting] = useState<boolean>(false);
 
   // Check if the current user is the owner of the playlist
   const isOwner = user && playlist?.user?.id === userInfo?.id;
 
+  // Ensure we have userInfo
+  useEffect(() => {
+    if (user && Object.keys(userInfo || {}).length === 0) {
+      dispatch(getUserInfo() as any);
+    }
+  }, [user, userInfo, dispatch]);
+
+  // Fetch playlist details whenever component mounts,
+  // when playlistId changes, or when auth state changes
   useEffect(() => {
     if (playlistId) {
       fetchPlaylistDetails();
     }
-  }, [playlistId]);
+  }, [playlistId, user, userInfo]);
+
+  const getAuthToken = (): string | null => {
+    // First try from Redux state
+    if (user?.access) {
+      return user.access;
+    }
+
+    // Then fallback to localStorage
+    try {
+      const storedUser = localStorage.getItem("user");
+      if (storedUser) {
+        const parsedUser = JSON.parse(storedUser);
+        return parsedUser.access || null;
+      }
+    } catch (e) {
+      console.error("Error parsing user from localStorage:", e);
+    }
+
+    return null;
+  };
 
   const fetchPlaylistDetails = async (): Promise<void> => {
     setIsLoading(true);
     setError(null);
 
     try {
-      // Get token from Redux state or localStorage as fallback
-      const token =
-        user?.access || localStorage.getItem("user")
-          ? JSON.parse(localStorage.getItem("user") || "{}").access
-          : null;
+      const token = getAuthToken();
 
-      const response = await axios.get<PlaylistData>(
+      const response = await axios.get<UserPlaylistData>(
         `${BACKEND_DOMAIN}/api/v1/playlists/${playlistId}/`,
         {
           headers: token ? { Authorization: `Bearer ${token}` } : {},
@@ -99,6 +104,10 @@ const PlaylistPage: React.FC = () => {
           setError("Playlist not found");
         } else if (err.response.status === 403) {
           setError("You don't have permission to view this playlist");
+        } else if (err.response.status === 401) {
+          // Token might be expired, try to refresh or redirect to login
+          setError("Session expired. Please log in again.");
+          // Optionally, redirect to login here
         } else {
           setError("Failed to load playlist details");
         }
@@ -119,8 +128,14 @@ const PlaylistPage: React.FC = () => {
       // Extract TikTok ID from URL (simplified extraction, might need adjustment)
       const tiktokId = newVideoUrl.split("/").pop()?.split("?")[0] || "";
 
-      const token =
-        user?.access || JSON.parse(localStorage.getItem("user") || "{}").access;
+      const token = getAuthToken();
+      if (!token) {
+        toast.error("You need to be logged in to add videos", {
+          theme: "dark",
+        });
+        navigate("/login");
+        return;
+      }
 
       const response = await axios.post(
         `${BACKEND_DOMAIN}/api/v1/videos/`,
@@ -155,7 +170,12 @@ const PlaylistPage: React.FC = () => {
       console.error("Error adding video:", err);
 
       if (axios.isAxiosError(err) && err.response) {
-        if (err.response.status === 403) {
+        if (err.response.status === 401) {
+          toast.error("Session expired. Please log in again", {
+            theme: "dark",
+          });
+          navigate("/login");
+        } else if (err.response.status === 403) {
           setError("You don't have permission to add videos to this playlist");
         } else {
           setError("Failed to add video");
@@ -175,8 +195,14 @@ const PlaylistPage: React.FC = () => {
     }
 
     try {
-      const token =
-        user?.access || JSON.parse(localStorage.getItem("user") || "{}").access;
+      const token = getAuthToken();
+      if (!token) {
+        toast.error("You need to be logged in to like playlists", {
+          theme: "dark",
+        });
+        navigate("/login");
+        return;
+      }
 
       const response = await axios.post(
         `${BACKEND_DOMAIN}/api/v1/playlists/${playlistId}/like/`,
@@ -197,15 +223,25 @@ const PlaylistPage: React.FC = () => {
           like_count: prev.is_liked ? prev.like_count - 1 : prev.like_count + 1,
         };
       });
+
+      toast.success(
+        playlist?.is_liked ? "Playlist unliked" : "Playlist liked",
+        { theme: "dark" }
+      );
     } catch (err) {
       console.error("Error liking playlist:", err);
+      if (axios.isAxiosError(err) && err.response?.status === 401) {
+        toast.error("Session expired. Please log in again", {
+          theme: "dark",
+        });
+        navigate("/login");
+      }
     }
   };
 
   const handleSharePlaylist = async (): Promise<void> => {
     try {
-      const token =
-        user?.access || JSON.parse(localStorage.getItem("user") || "{}").access;
+      const token = getAuthToken();
 
       const response = await axios.post(
         `${BACKEND_DOMAIN}/api/v1/playlists/${playlistId}/share/`,
@@ -227,10 +263,14 @@ const PlaylistPage: React.FC = () => {
         };
       });
 
-      // You could add a toast notification here
-      alert("Playlist URL copied to clipboard!");
+      toast.success("Playlist URL copied to clipboard!", {
+        theme: "dark",
+      });
     } catch (err) {
       console.error("Error sharing playlist:", err);
+      toast.error("Could not share playlist", {
+        theme: "dark",
+      });
     }
   };
 
@@ -248,8 +288,14 @@ const PlaylistPage: React.FC = () => {
     if (!isOwner) return;
 
     try {
-      const token =
-        user?.access || JSON.parse(localStorage.getItem("user") || "{}").access;
+      const token = getAuthToken();
+      if (!token) {
+        toast.error("You need to be logged in to remove videos", {
+          theme: "dark",
+        });
+        navigate("/login");
+        return;
+      }
 
       await axios.delete(`${BACKEND_DOMAIN}/api/v1/videos/${videoId}/`, {
         headers: {
@@ -266,9 +312,93 @@ const PlaylistPage: React.FC = () => {
           video_count: prev.video_count - 1,
         };
       });
+
+      toast.success("Video removed successfully", {
+        theme: "dark",
+      });
     } catch (err) {
       console.error("Error removing video:", err);
-      setError("Failed to remove video");
+      if (axios.isAxiosError(err) && err.response?.status === 401) {
+        toast.error("Session expired. Please log in again", {
+          theme: "dark",
+        });
+        navigate("/login");
+      } else {
+        setError("Failed to remove video");
+      }
+    }
+  };
+
+  // Handle playlist edit through NewPlaylist component
+  const handlePlaylistUpdated = (updatedPlaylist: any): void => {
+    setIsEditModalOpen(false);
+    // Merge the updated playlist data with existing playlist data
+    setPlaylist((prev) => {
+      if (!prev) return updatedPlaylist;
+      return {
+        ...prev,
+        title: updatedPlaylist.title,
+        description: updatedPlaylist.description,
+        cover_image: updatedPlaylist.cover_image,
+        is_public: updatedPlaylist.is_public,
+        tags: updatedPlaylist.tags,
+      };
+    });
+
+    toast.success("Playlist updated successfully", {
+      theme: "dark",
+    });
+  };
+
+  // Handle playlist deletion
+  const handleDeletePlaylist = async (): Promise<void> => {
+    if (!playlist || !isOwner) return;
+
+    if (
+      window.confirm(`Are you sure you want to delete "${playlist.title}"?`)
+    ) {
+      setIsDeleting(true);
+
+      try {
+        const token = getAuthToken();
+        if (!token) {
+          toast.error("You need to be logged in to delete this playlist", {
+            theme: "dark",
+          });
+          navigate("/login");
+          return;
+        }
+
+        await axios.delete(
+          `${BACKEND_DOMAIN}/api/v1/playlists/${playlist.id}/`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+
+        toast.success(`Deleted "${playlist.title}"`, {
+          theme: "dark",
+        });
+
+        const targetUsername = playlist.user.username || userInfo.username;
+        navigate(`/${targetUsername}/playlists`);
+      } catch (error) {
+        console.error("Error deleting playlist:", error);
+        if (axios.isAxiosError(error) && error.response?.status === 401) {
+          toast.error("Session expired. Please log in again", {
+            theme: "dark",
+          });
+          navigate("/login");
+        } else {
+          toast.error("Failed to delete playlist", {
+            theme: "dark",
+          });
+        }
+      } finally {
+        setIsDeleting(false);
+      }
     }
   };
 
@@ -320,6 +450,42 @@ const PlaylistPage: React.FC = () => {
     <>
       <NavBar />
       <div className="container mx-auto p-6">
+        {/* Edit Playlist Modal */}
+        {isOwner && (
+          <>
+            <NewPlaylist
+              isOpen={isEditModalOpen}
+              onClose={() => setIsEditModalOpen(false)}
+              onPlaylistCreated={handlePlaylistUpdated}
+              editMode={true}
+              playlistData={playlist}
+            />
+            <EmbedVideo
+              isOpen={isEmbedModalOpen}
+              onClose={() => setIsEmbedModalOpen(false)}
+              onVideoAdded={(newVideo) => {
+                setPlaylist((prev) => {
+                  if (!prev) return prev;
+                  return {
+                    ...prev,
+                    videos: [...prev.videos, newVideo],
+                    video_count: prev.video_count + 1,
+                  };
+                });
+
+                // Add toast message here
+                toast.success(
+                  `Video "${newVideo.title || "Untitled"}" added to playlist!`,
+                  {
+                    theme: "dark",
+                  }
+                );
+              }}
+              playlistId={playlistId}
+            />
+          </>
+        )}
+
         {/* Playlist Header */}
         <div className="flex flex-col md:flex-row gap-6 mb-8">
           <div className="w-full md:w-64 h-64 bg-gray-200 rounded flex items-center justify-center">
@@ -354,9 +520,22 @@ const PlaylistPage: React.FC = () => {
               • {playlist.is_public ? "Public" : "Private"}
             </p>
 
-            <p className="mb-6">
+            <p className="mb-4">
               {playlist.description || "No description provided"}
             </p>
+
+            {playlist.tags && playlist.tags.length > 0 && (
+              <div className="flex flex-wrap gap-2 mb-4">
+                {playlist.tags.map((tag, index) => (
+                  <span
+                    key={index}
+                    className="bg-gray-100 text-gray-600 px-2 py-1 rounded-full text-xs"
+                  >
+                    {tag.name}
+                  </span>
+                ))}
+              </div>
+            )}
 
             <div className="flex flex-wrap gap-2 text-sm text-gray-500 mb-6">
               <span>
@@ -380,7 +559,7 @@ const PlaylistPage: React.FC = () => {
               </span>
             </div>
 
-            <div className="flex gap-3">
+            <div className="flex flex-wrap gap-3">
               <PrimaryButton
                 onClick={handleLikePlaylist}
                 className={`px-4 py-2 ${
@@ -398,13 +577,30 @@ const PlaylistPage: React.FC = () => {
               </SecondaryButton>
 
               {isOwner && (
-                <SecondaryButton
-                  onClick={() => setIsAddingVideo(!isAddingVideo)}
-                  className="flex items-center gap-2 px-4 py-2"
-                >
-                  <IoMdAdd size={18} />
-                  Add Video
-                </SecondaryButton>
+                <>
+                  <SecondaryButton
+                    onClick={() => setIsEmbedModalOpen(true)}
+                    className="flex items-center gap-2 px-4 py-2"
+                  >
+                    <IoMdAdd size={18} />
+                    Add Video
+                  </SecondaryButton>
+
+                  <SecondaryButton
+                    onClick={() => setIsEditModalOpen(true)}
+                    className="px-4 py-2"
+                  >
+                    Edit Playlist
+                  </SecondaryButton>
+
+                  <PrimaryButton
+                    onClick={handleDeletePlaylist}
+                    className="px-4 py-2 bg-red-600 hover:bg-red-700"
+                    disabled={isDeleting}
+                  >
+                    {isDeleting ? "Deleting..." : "Delete Playlist"}
+                  </PrimaryButton>
+                </>
               )}
             </div>
           </div>
@@ -491,7 +687,7 @@ const PlaylistPage: React.FC = () => {
             />
             {isOwner && !isAddingVideo && (
               <PrimaryButton
-                onClick={() => setIsAddingVideo(true)}
+                onClick={() => setIsEmbedModalOpen(true)}
                 className="mt-6 flex items-center gap-2 mx-auto"
               >
                 <IoMdAdd size={18} />
@@ -500,51 +696,14 @@ const PlaylistPage: React.FC = () => {
             )}
           </div>
         ) : (
-          <div className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {playlist.videos.map((video) => (
-              <Card
+              <VideoCard
                 key={video.id}
-                className="p-4 flex flex-col md:flex-row gap-4"
-              >
-                <div className="w-full md:w-40 h-24 bg-gray-200 rounded flex items-center justify-center shrink-0">
-                  {video.thumbnail_url || video.custom_thumbnail ? (
-                    <img
-                      src={getThumbnailUrl(video)}
-                      alt={video.title || "Video thumbnail"}
-                      className="object-cover w-full h-full rounded"
-                    />
-                  ) : (
-                    <div className="text-gray-400 text-2xl">🎞️</div>
-                  )}
-                </div>
-
-                <div className="flex-1">
-                  <h3 className="font-semibold text-lg">
-                    {video.title || "Untitled Video"}
-                  </h3>
-                  <p className="text-sm text-gray-500 mb-2">
-                    TikTok ID: {video.tiktok_id}
-                  </p>
-                  <div className="flex gap-2">
-                    <a
-                      href={video.tiktok_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-indigo-600 hover:text-indigo-800 text-sm"
-                    >
-                      View on TikTok
-                    </a>
-                    {isOwner && (
-                      <button
-                        onClick={() => handleRemoveVideo(video.id)}
-                        className="text-red-600 hover:text-red-800 text-sm"
-                      >
-                        Remove
-                      </button>
-                    )}
-                  </div>
-                </div>
-              </Card>
+                video={video}
+                isOwner={isOwner}
+                onRemove={handleRemoveVideo}
+              />
             ))}
           </div>
         )}

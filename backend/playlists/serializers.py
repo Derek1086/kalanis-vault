@@ -30,6 +30,7 @@ class PlaylistSerializer(serializers.ModelSerializer):
     like_count = serializers.IntegerField(read_only=True)
     video_count = serializers.IntegerField(read_only=True)
     is_liked = serializers.SerializerMethodField()
+    tags = TagSerializer(many=True, read_only=True)
     
     class Meta:
         model = Playlist
@@ -50,7 +51,6 @@ class PlaylistCreateSerializer(serializers.ModelSerializer):
     """
     Serializer for creating playlists.
     """
-    # Add a custom field for tags that can accept a list of strings
     tags = serializers.ListField(
         child=serializers.CharField(max_length=50),
         required=False,
@@ -63,29 +63,23 @@ class PlaylistCreateSerializer(serializers.ModelSerializer):
     
     def create(self, validated_data):
         """Add the current user to the playlist data and handle tags"""
-        # Extract tags from validated data
         tags_data = validated_data.pop('tags', [])
         
-        # Create playlist without tags
         user = self.context['request'].user
         playlist = Playlist.objects.create(user=user, **validated_data)
         
-        # Add tags to playlist
         self._add_tags_to_playlist(playlist, tags_data)
         
         return playlist
 
     def update(self, instance, validated_data):
         """Handle updating playlist and tags"""
-        # Extract tags from validated data
         tags_data = validated_data.pop('tags', None)
         
-        # Update playlist fields
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
         instance.save()
         
-        # Update tags if provided
         if tags_data is not None:
             instance.tags.clear()
             self._add_tags_to_playlist(instance, tags_data)

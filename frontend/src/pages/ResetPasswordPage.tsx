@@ -7,7 +7,7 @@ import { AppDispatch, RootState } from "../app/store";
 
 import { Card } from "../components/Container";
 import { Header, SecondaryText } from "../components/Typography";
-import { PrimaryButton, SecondaryButton } from "../components/Button"; // Make sure SecondaryButton exists or use PrimaryButton again
+import { PrimaryButton, SecondaryButton } from "../components/Button";
 import { IconInputField } from "../components/Input";
 
 import { CiAt } from "react-icons/ci";

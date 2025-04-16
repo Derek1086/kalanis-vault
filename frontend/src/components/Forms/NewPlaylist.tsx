@@ -1,4 +1,4 @@
-import React, { useRef, useState } from "react";
+import React, { useRef, useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { useSelector } from "react-redux";
@@ -15,47 +15,31 @@ import { BsTag } from "react-icons/bs";
 import { MdOutlineImage } from "react-icons/md";
 import { IoAdd, IoClose } from "react-icons/io5";
 
-const BACKEND_DOMAIN =
-  import.meta.env.VITE_BACKEND_DOMAIN || "http://localhost:8000";
+import {
+  PlaylistData,
+  ValidationErrors,
+  BACKEND_DOMAIN,
+} from "../../types/playlists";
 
 interface NewPlaylistProps {
   isOpen: boolean;
   onClose: () => void;
   onPlaylistCreated?: (playlist: PlaylistData) => void;
+  editMode?: boolean;
+  playlistData?: PlaylistData;
 }
-
-interface PlaylistData {
-  id: number;
-  title: string;
-  description: string;
-  cover_image: string | null;
-  is_public: boolean;
-  tags?: string[];
-}
-
-interface ValidationErrors {
-  title?: string;
-  description?: string;
-  thumbnail?: string;
-  tags?: string;
-  non_field_errors?: string[];
-}
-
-interface TagOption {
-  id: number;
-  name: string;
-}
-
 const NewPlaylist: React.FC<NewPlaylistProps> = ({
   isOpen,
   onClose,
   onPlaylistCreated,
+  editMode = false,
+  playlistData,
 }) => {
-  // Get auth state from Redux
   const { user, userInfo } = useSelector((state: RootState) => state.auth);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const [playlistId, setPlaylistId] = useState<number | null>(null);
   const [playlistName, setPlaylistName] = useState("");
   const [playlistDescription, setPlaylistDescription] = useState("");
   const [isPublic, setIsPublic] = useState(true);
@@ -70,25 +54,86 @@ const NewPlaylist: React.FC<NewPlaylistProps> = ({
   // States for tags and thumbnail
   const [tags, setTags] = useState<string[]>([]);
   const [newTag, setNewTag] = useState("");
-  const [tagSuggestions, setTagSuggestions] = useState<TagOption[]>([]);
-  const [showTagSuggestions, setShowTagSuggestions] = useState(false);
   const [thumbnail, setThumbnail] = useState<File | null>(null);
   const [thumbnailPreview, setThumbnailPreview] = useState<string | null>(null);
+  const [existingThumbnail, setExistingThumbnail] = useState<string | null>(
+    null
+  );
 
-  // Reset form when modal opens/closes
-  React.useEffect(() => {
+  // Reset form or populate with existing data when modal opens/closes
+  useEffect(() => {
     if (isOpen) {
-      setPlaylistName("");
-      setPlaylistDescription("");
-      setIsPublic(true);
+      if (editMode && playlistData) {
+        // Populate form with existing data
+        setPlaylistId(playlistData.id);
+        setPlaylistName(playlistData.title);
+        setPlaylistDescription(playlistData.description || "");
+        setIsPublic(playlistData.is_public);
+
+        if (playlistData.cover_image) {
+          setExistingThumbnail(playlistData.cover_image);
+          setThumbnailPreview(
+            playlistData.cover_image.startsWith("http")
+              ? playlistData.cover_image
+              : `${BACKEND_DOMAIN}${playlistData.cover_image}`
+          );
+        } else {
+          setExistingThumbnail(null);
+          setThumbnailPreview(null);
+        }
+
+        // Fetch tags if they exist
+        if (playlistData.id) {
+          fetchPlaylistTags(playlistData.id);
+        } else {
+          setTags([]);
+        }
+      } else {
+        // Reset form for new playlist
+        setPlaylistId(null);
+        setPlaylistName("");
+        setPlaylistDescription("");
+        setIsPublic(true);
+        setTags([]);
+        setExistingThumbnail(null);
+        setThumbnailPreview(null);
+      }
+
       setError(null);
       setValidationErrors({});
-      setTags([]);
       setNewTag("");
       setThumbnail(null);
-      setThumbnailPreview(null);
     }
-  }, [isOpen]);
+  }, [isOpen, editMode, playlistData]);
+
+  const fetchPlaylistTags = async (playlistId: number) => {
+    try {
+      const token = user?.access || localStorage.getItem("accessToken");
+      if (!token) return;
+
+      const response = await axios.get(
+        `${BACKEND_DOMAIN}/api/v1/playlists/${playlistId}/`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (response.data.tags) {
+        // Extract tag names from the response
+        const tagNames = response.data.tags.map((tag: any) =>
+          typeof tag === "object" ? tag.name : tag
+        );
+        setTags(tagNames);
+      } else {
+        setTags([]);
+      }
+    } catch (error) {
+      console.error("Error fetching playlist tags:", error);
+      setTags([]);
+    }
+  };
 
   const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setPlaylistName(e.target.value);
@@ -115,37 +160,6 @@ const NewPlaylist: React.FC<NewPlaylistProps> = ({
     if (validationErrors.tags) {
       setValidationErrors((prev) => ({ ...prev, tags: undefined }));
     }
-
-    // Fetch tag suggestions if input is at least 2 characters
-    if (value.length >= 2) {
-      fetchTagSuggestions(value);
-      setShowTagSuggestions(true);
-    } else {
-      setTagSuggestions([]);
-      setShowTagSuggestions(false);
-    }
-  };
-
-  const fetchTagSuggestions = async (query: string) => {
-    try {
-      const token = user?.access || localStorage.getItem("accessToken");
-      if (!token) return;
-
-      const response = await axios.get(
-        `${BACKEND_DOMAIN}/api/v1/tags/autocomplete/?q=${encodeURIComponent(
-          query
-        )}`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-
-      setTagSuggestions(response.data);
-    } catch (error) {
-      console.error("Error fetching tag suggestions:", error);
-    }
   };
 
   const addTag = () => {
@@ -153,8 +167,6 @@ const NewPlaylist: React.FC<NewPlaylistProps> = ({
     if (trimmedTag && !tags.includes(trimmedTag) && tags.length < 10) {
       setTags([...tags, trimmedTag]);
       setNewTag("");
-      setTagSuggestions([]);
-      setShowTagSuggestions(false);
     }
   };
 
@@ -162,22 +174,11 @@ const NewPlaylist: React.FC<NewPlaylistProps> = ({
     if (e.key === "Enter") {
       e.preventDefault();
       addTag();
-    } else if (e.key === "Escape") {
-      setShowTagSuggestions(false);
     }
   };
 
   const removeTag = (tagToRemove: string) => {
     setTags(tags.filter((tag) => tag !== tagToRemove));
-  };
-
-  const selectTagSuggestion = (tagName: string) => {
-    if (!tags.includes(tagName) && tags.length < 10) {
-      setTags([...tags, tagName]);
-      setNewTag("");
-      setTagSuggestions([]);
-      setShowTagSuggestions(false);
-    }
   };
 
   const handleThumbnailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -205,6 +206,7 @@ const NewPlaylist: React.FC<NewPlaylistProps> = ({
 
       setThumbnail(file);
       setThumbnailPreview(URL.createObjectURL(file));
+      setExistingThumbnail(null);
 
       // Clear validation errors
       if (validationErrors.thumbnail) {
@@ -222,6 +224,7 @@ const NewPlaylist: React.FC<NewPlaylistProps> = ({
   const removeThumbnail = () => {
     setThumbnail(null);
     setThumbnailPreview(null);
+    setExistingThumbnail(null);
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
     }
@@ -260,7 +263,7 @@ const NewPlaylist: React.FC<NewPlaylistProps> = ({
     const token = user?.access || localStorage.getItem("accessToken");
 
     if (!token) {
-      setError("You must be logged in to create a playlist");
+      setError("You must be logged in to create or edit a playlist");
       setIsLoading(false);
       return;
     }
@@ -279,6 +282,9 @@ const NewPlaylist: React.FC<NewPlaylistProps> = ({
       // Add cover image if selected
       if (thumbnail) {
         formData.append("cover_image", thumbnail);
+      } else if (existingThumbnail === null && editMode) {
+        // If in edit mode and we removed the thumbnail
+        formData.append("cover_image", "");
       }
 
       // Add tags
@@ -288,17 +294,41 @@ const NewPlaylist: React.FC<NewPlaylistProps> = ({
         });
       }
 
-      // Send request to your Django API
-      const response = await axios.post(
-        `${BACKEND_DOMAIN}/api/v1/playlists/`,
-        formData,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "multipart/form-data",
-          },
-        }
-      );
+      let response;
+
+      if (editMode && playlistId) {
+        // Update existing playlist
+        response = await axios.patch(
+          `${BACKEND_DOMAIN}/api/v1/playlists/${playlistId}/`,
+          formData,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "multipart/form-data",
+            },
+          }
+        );
+
+        toast.success(`Updated "${playlistName}"`, {
+          theme: "dark",
+        });
+      } else {
+        // Create new playlist
+        response = await axios.post(
+          `${BACKEND_DOMAIN}/api/v1/playlists/`,
+          formData,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "multipart/form-data",
+            },
+          }
+        );
+
+        toast.success(`Created "${playlistName}"`, {
+          theme: "dark",
+        });
+      }
 
       // Handle successful response
       setIsLoading(false);
@@ -309,16 +339,14 @@ const NewPlaylist: React.FC<NewPlaylistProps> = ({
 
       onClose();
 
-      toast.success(`Created "${playlistName}"`, {
-        theme: "dark",
-      });
-
-      const username = userInfo?.username || "";
-      const playlistId = response.data.id;
-      navigate(`/${username}/playlists/${playlistId}`);
+      if (!editMode) {
+        const username = userInfo?.username || "";
+        const playlistId = response.data.id;
+        navigate(`/${username}/playlists/${playlistId}`);
+      }
     } catch (err) {
       setIsLoading(false);
-      console.error("Error creating playlist:", err);
+      console.error("Error processing playlist:", err);
 
       if (axios.isAxiosError(err) && err.response) {
         console.error("Response data:", err.response.data);
@@ -329,7 +357,9 @@ const NewPlaylist: React.FC<NewPlaylistProps> = ({
           setError("Your session has expired. Please log in again.");
         } else {
           setError(
-            "An error occurred while creating your playlist. Please try again."
+            `An error occurred while ${
+              editMode ? "updating" : "creating"
+            } your playlist. Please try again.`
           );
         }
       } else {
@@ -342,8 +372,12 @@ const NewPlaylist: React.FC<NewPlaylistProps> = ({
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title="Create New Playlist"
-      description="Create a new playlist to organize your favorite content."
+      title={editMode ? "Edit Playlist" : "Create New Playlist"}
+      description={
+        editMode
+          ? "Update your playlist details"
+          : "Create a new playlist to organize your favorite content."
+      }
     >
       {error && (
         <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4 flex items-center">
@@ -437,8 +471,8 @@ const NewPlaylist: React.FC<NewPlaylistProps> = ({
           )}
         </div>
 
-        {/* Tags section */}
-        <div className="relative">
+        {/* Tags section (simplified without suggestions) */}
+        <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
             Tags (optional, max 10)
           </label>
@@ -461,7 +495,7 @@ const NewPlaylist: React.FC<NewPlaylistProps> = ({
           </div>
 
           <div className="flex">
-            <div className="flex-grow relative">
+            <div className="flex-grow">
               <IconInputField
                 type="text"
                 name="tags"
@@ -473,20 +507,6 @@ const NewPlaylist: React.FC<NewPlaylistProps> = ({
                 icon={<BsTag className="h-5 w-5 text-gray-400" />}
                 className={validationErrors.tags ? "border-red-500" : ""}
               />
-
-              {showTagSuggestions && tagSuggestions.length > 0 && (
-                <div className="absolute z-10 mt-1 w-full bg-white shadow-lg rounded-md border border-gray-300 max-h-40 overflow-y-auto">
-                  {tagSuggestions.map((tag) => (
-                    <div
-                      key={tag.id}
-                      className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
-                      onClick={() => selectTagSuggestion(tag.name)}
-                    >
-                      {tag.name}
-                    </div>
-                  ))}
-                </div>
-              )}
             </div>
 
             <button
@@ -528,6 +548,8 @@ const NewPlaylist: React.FC<NewPlaylistProps> = ({
         >
           {isLoading ? (
             <AiOutlineLoading3Quarters className="animate-spin h-5 w-5" />
+          ) : editMode ? (
+            "Update Playlist"
           ) : (
             "Create Playlist"
           )}

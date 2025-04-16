@@ -3,6 +3,7 @@ import { useSelector, useDispatch } from "react-redux";
 import { Link, useNavigate } from "react-router-dom";
 import { RootState, AppDispatch } from "../../app/store";
 import { logout, reset } from "../../features/auth/authSlice";
+import { BACKEND_DOMAIN } from "../../types/playlists";
 
 import {
   CiCirclePlus,
@@ -16,9 +17,6 @@ import { IoHomeOutline, IoSearch } from "react-icons/io5";
 import { SearchField } from "../Input";
 import { IconButton } from "../Button";
 import { DropDownMenu, DropDownItem, DropDownDivider } from "./DropDown";
-
-const BACKEND_DOMAIN =
-  import.meta.env.VITE_BACKEND_DOMAIN || "http://localhost:8000";
 
 interface NavBarProps {
   onCreatePlaylist?: () => void;
@@ -56,6 +54,19 @@ const NavBar = ({ onCreatePlaylist }: NavBarProps) => {
    */
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchQuery(e.target.value);
+  };
+
+  /**
+   * Handles search on enter key press
+   * Navigates to search page when Enter key is pressed
+   */
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    console.log(e.key);
+    if (e.key === "Enter" && searchQuery.trim()) {
+      console.log("Search query:", searchQuery.trim());
+      // Navigate to search page with the query parameter
+      navigate(`/search/${encodeURIComponent(searchQuery.trim())}`);
+    }
   };
 
   /**
@@ -109,9 +120,10 @@ const NavBar = ({ onCreatePlaylist }: NavBarProps) => {
             name="search"
             onChange={handleSearch}
             value={searchQuery}
-            icon={<IoSearch className="h-5 w-5 text-gray-400" />}
+            icon={<IoSearch className="h-5 w-5 text-gray-400 cursor-pointer" />}
             className="pr-20"
             onClear={() => setSearchQuery("")}
+            onKeyDown={handleKeyDown}
           />
           <div className="absolute right-10 h-5 w-[1px] bg-gray-300" />
           <Link to="/" className="absolute right-2 flex items-center px-1">
@@ -170,7 +182,10 @@ const NavBar = ({ onCreatePlaylist }: NavBarProps) => {
                   </DropDownItem>
                   <DropDownItem
                     icon={<CiHeart className="h-5 w-5" />}
-                    onClick={() => setDropdownOpen(false)}
+                    onClick={() => {
+                      navigate(`/${userInfo.username}/liked-playlists`);
+                      setDropdownOpen(false);
+                    }}
                   >
                     My Likes
                   </DropDownItem>
