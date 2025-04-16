@@ -60,7 +60,7 @@ const ResetPasswordPage = () => {
   }, [isError, isSuccess, message, navigate, dispatch]);
 
   return (
-    <>
+    <div className="min-h-screen flex items-center justify-center p-4">
       <Card>
         <form className="space-y-4" onSubmit={handleSubmit}>
           <Header text="Reset Password" className="text-center" />
@@ -89,7 +89,7 @@ const ResetPasswordPage = () => {
           </SecondaryButton>
         </div>
       </Card>
-    </>
+    </div>
   );
 };
 

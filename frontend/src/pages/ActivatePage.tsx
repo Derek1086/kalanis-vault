@@ -46,22 +46,24 @@ const ActivatePage = () => {
   }, [isError, isSuccess, navigate, dispatch, message]);
 
   return (
-    <Card>
-      <div className="flex flex-col items-center mb-6">
-        <Header text="Activate Account" />
-        <SecondaryText
-          text="Press the button below to activate your account."
-          className="text-gray-400 mb-4 mt-4"
-        />
-        <PrimaryIconButton
-          type="button"
-          icon={<CiCircleCheck className="h-4 w-4" />}
-          onClick={handleSubmit}
-        >
-          Activate Account
-        </PrimaryIconButton>
-      </div>
-    </Card>
+    <div className="min-h-screen flex items-center justify-center p-4">
+      <Card>
+        <div className="flex flex-col items-center mb-6">
+          <Header text="Activate Account" />
+          <SecondaryText
+            text="Press the button below to activate your account."
+            className="text-gray-400 mb-4 mt-4"
+          />
+          <PrimaryIconButton
+            type="button"
+            icon={<CiCircleCheck className="h-4 w-4" />}
+            onClick={handleSubmit}
+          >
+            Activate Account
+          </PrimaryIconButton>
+        </div>
+      </Card>
+    </div>
   );
 };
 

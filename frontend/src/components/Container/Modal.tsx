@@ -11,6 +11,7 @@ interface ModalProps {
   description?: string;
   children: React.ReactNode;
   maxWidth?: string;
+  minWidth?: string;
 }
 
 export const Modal: React.FC<ModalProps> = ({
@@ -20,6 +21,7 @@ export const Modal: React.FC<ModalProps> = ({
   description,
   children,
   maxWidth = "max-w-md",
+  minWidth = "min-w-md",
 }) => {
   const modalRef = useRef<HTMLDivElement>(null);
 
@@ -48,7 +50,7 @@ export const Modal: React.FC<ModalProps> = ({
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
       <Card
         ref={modalRef}
-        className={`relative p-6 w-full ${maxWidth} max-h-[90vh] overflow-y-auto`}
+        className={`relative p-6 w-full ${maxWidth} ${minWidth} max-h-[90vh] overflow-y-auto`}
       >
         <div className="absolute top-2 right-2">
           <IconButton icon={<IoMdClose size={20} />} onClick={onClose} />

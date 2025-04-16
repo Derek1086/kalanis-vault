@@ -1,16 +1,17 @@
-import React, { useState, useEffect } from "react";
 import axios from "axios";
+import React, { useState, useEffect } from "react";
+import { toast } from "react-toastify";
 import { useSelector } from "react-redux";
 import { RootState } from "../../app/store";
-import { Modal } from "../Container";
-import { toast } from "react-toastify";
-import { IconInputField } from "../Input";
-import { PrimaryButton, SecondaryButton } from "../Button";
 import {
   VideoData,
   LinkAnalysisResult,
   BACKEND_DOMAIN,
 } from "../../types/playlists";
+
+import { Modal } from "../Container";
+import { IconInputField } from "../Input";
+import { PrimaryButton, SecondaryButton } from "../Button";
 
 import { AiOutlineLoading3Quarters } from "react-icons/ai";
 import { IoWarningOutline } from "react-icons/io5";
@@ -48,6 +49,7 @@ const EmbedVideo: React.FC<EmbedVideoProps> = ({
 
   const [videoUrl, setVideoUrl] = useState<string>("");
   const [videoTitle, setVideoTitle] = useState<string>("");
+  const [thumbnailUrl, setThumbnailUrl] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [isAnalyzing, setIsAnalyzing] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
@@ -57,12 +59,11 @@ const EmbedVideo: React.FC<EmbedVideoProps> = ({
   const [linkResult, setLinkResult] = useState<LinkAnalysisResult | null>(null);
   const [embedInitialized, setEmbedInitialized] = useState<boolean>(false);
 
-  // Reset form when modal opens/closes
   React.useEffect(() => {
     if (!isOpen) {
-      // Reset form
       setVideoUrl("");
       setVideoTitle("");
+      setThumbnailUrl(null);
       setError(null);
       setValidationErrors({});
       setLinkResult(null);
@@ -70,29 +71,24 @@ const EmbedVideo: React.FC<EmbedVideoProps> = ({
     }
   }, [isOpen]);
 
-  // Load TikTok embed script when needed
   useEffect(() => {
     if (
       linkResult?.platform === "tiktok" &&
       linkResult.isValid &&
       !embedInitialized
     ) {
-      // Remove any existing TikTok embed script to avoid duplicates
       const existingScript = document.getElementById("tiktok-embed-script");
       if (existingScript) {
         existingScript.remove();
       }
 
-      // Create and append the TikTok embed script
       const script = document.createElement("script");
       script.id = "tiktok-embed-script";
       script.src = "https://www.tiktok.com/embed.js";
       script.async = true;
       script.onload = () => {
-        // Script has loaded and is ready
         setEmbedInitialized(true);
 
-        // If TikTok's widget object exists, call it to process embeds
         if (window.tiktokEmbed) {
           window.tiktokEmbed.reloadEmbeds();
         }
@@ -101,7 +97,6 @@ const EmbedVideo: React.FC<EmbedVideoProps> = ({
       document.body.appendChild(script);
 
       return () => {
-        // Clean up script when component unmounts
         if (script.parentNode) {
           script.parentNode.removeChild(script);
         }
@@ -110,12 +105,10 @@ const EmbedVideo: React.FC<EmbedVideoProps> = ({
   }, [linkResult, embedInitialized]);
 
   const getAuthToken = (): string | null => {
-    // First try from Redux state
     if (user?.access) {
       return user.access;
     }
 
-    // Then fallback to localStorage
     try {
       const storedUser = localStorage.getItem("user");
       if (storedUser) {
@@ -131,7 +124,6 @@ const EmbedVideo: React.FC<EmbedVideoProps> = ({
 
   const handleUrlChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setVideoUrl(e.target.value);
-    // Clear validation error when user starts typing
     if (validationErrors.tiktok_url) {
       setValidationErrors((prev) => ({ ...prev, tiktok_url: undefined }));
     }
@@ -165,12 +157,10 @@ const EmbedVideo: React.FC<EmbedVideoProps> = ({
 
   const extractTikTokId = (url: string): string | null => {
     try {
-      // Handle shortened TikTok URLs
       if (url.includes("vm.tiktok.com")) {
         return "unknown"; // We'll need to handle this on the backend
       }
 
-      // Handle regular TikTok URLs
       const regex = /\/video\/(\d+)/;
       const match = url.match(regex);
       return match ? match[1] : null;
@@ -185,6 +175,7 @@ const EmbedVideo: React.FC<EmbedVideoProps> = ({
     setIsAnalyzing(true);
     setError(null);
     setEmbedInitialized(false);
+    setThumbnailUrl(null); // Reset thumbnail URL when analyzing a new link
 
     try {
       const detectionResult = detectPlatform(videoUrl);
@@ -200,7 +191,6 @@ const EmbedVideo: React.FC<EmbedVideoProps> = ({
         }
 
         try {
-          // Try to fetch preview data from TikTok's oEmbed API
           const response = await fetch(
             `https://www.tiktok.com/oembed?url=${encodeURIComponent(videoUrl)}`
           );
@@ -214,13 +204,16 @@ const EmbedVideo: React.FC<EmbedVideoProps> = ({
               thumbnailUrl: data.thumbnail_url,
             };
 
-            // Auto-populate title if empty
             if (!videoTitle && data.title) {
               setVideoTitle(data.title);
             }
+
+            if (data.thumbnail_url) {
+              setThumbnailUrl(data.thumbnail_url);
+              console.log("Thumbnail URL set:", data.thumbnail_url);
+            }
           }
         } catch (err) {
-          // Silently fail on oEmbed, as we don't need it to continue
           console.warn("Could not fetch TikTok oEmbed data:", err);
         }
 
@@ -267,7 +260,6 @@ const EmbedVideo: React.FC<EmbedVideoProps> = ({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Client-side validation
     if (!validate()) return;
 
     setIsLoading(true);
@@ -281,17 +273,21 @@ const EmbedVideo: React.FC<EmbedVideoProps> = ({
         return;
       }
 
-      // Extract TikTok ID from URL
       const tiktokId = extractTikTokId(videoUrl) || "";
+
+      const videoData = {
+        tiktok_url: videoUrl,
+        tiktok_id: tiktokId,
+        title: videoTitle || null,
+        playlist: playlistId,
+        thumbnail_url: thumbnailUrl || null,
+      };
+
+      console.log("Sending video data:", videoData);
 
       const response = await axios.post(
         `${BACKEND_DOMAIN}/api/v1/videos/`,
-        {
-          tiktok_url: videoUrl,
-          tiktok_id: tiktokId,
-          title: videoTitle || null,
-          playlist: playlistId,
-        },
+        videoData,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -299,14 +295,13 @@ const EmbedVideo: React.FC<EmbedVideoProps> = ({
         }
       );
 
-      // Handle successful response
       setIsLoading(false);
       toast.success("Video added successfully", {
         theme: "dark",
       });
 
-      // Call the callback function with the new video data
       onVideoAdded(response.data);
+      console.log("Video added:", response.data);
       onClose();
     } catch (err) {
       setIsLoading(false);
@@ -332,6 +327,7 @@ const EmbedVideo: React.FC<EmbedVideoProps> = ({
       onClose={onClose}
       title="Add Video to Playlist"
       description="Embed a TikTok video to your playlist."
+      minWidth="min-w-lg"
     >
       {error && (
         <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4 flex items-center">
@@ -341,57 +337,46 @@ const EmbedVideo: React.FC<EmbedVideoProps> = ({
       )}
 
       <form className="space-y-4" onSubmit={handleSubmit}>
-        <div>
-          <div className="flex gap-2">
-            <div className="flex-grow">
-              <IconInputField
-                type="text"
-                placeholder="TikTok Video URL"
-                name="videoUrl"
-                onChange={handleUrlChange}
-                value={videoUrl}
-                required
-                autoFocus
-                icon={<CiLink className="h-5 w-5 text-gray-400" />}
-                className={validationErrors.tiktok_url ? "border-red-500" : ""}
-              />
-            </div>
-            <SecondaryButton
-              type="button"
-              onClick={analyzeLink}
-              disabled={isAnalyzing || !videoUrl.trim()}
-              className="whitespace-nowrap"
-            >
-              {isAnalyzing ? (
-                <AiOutlineLoading3Quarters className="animate-spin h-5 w-5" />
-              ) : (
-                "Analyze"
-              )}
-            </SecondaryButton>
-          </div>
-          {validationErrors.tiktok_url && (
-            <p className="text-red-500 text-sm mt-1">
-              {validationErrors.tiktok_url}
-            </p>
+        <IconInputField
+          type="text"
+          placeholder="TikTok Video URL"
+          name="videoUrl"
+          onChange={handleUrlChange}
+          value={videoUrl}
+          required
+          autoFocus
+          icon={<CiLink className="h-5 w-5 text-gray-400" />}
+          className={validationErrors.tiktok_url ? "border-red-500" : ""}
+        />
+        {validationErrors.tiktok_url && (
+          <p className="text-red-500 text-sm mt-1">
+            {validationErrors.tiktok_url}
+          </p>
+        )}
+        <IconInputField
+          type="text"
+          placeholder="Video Title (Optional)"
+          name="videoTitle"
+          onChange={handleTitleChange}
+          value={videoTitle}
+          icon={<BsCardHeading className="h-5 w-5 text-gray-400" />}
+          className={validationErrors.title ? "border-red-500" : ""}
+        />
+        {validationErrors.title && (
+          <p className="text-red-500 text-sm mt-1">{validationErrors.title}</p>
+        )}
+        <PrimaryButton
+          type="button"
+          onClick={analyzeLink}
+          disabled={isAnalyzing || !videoUrl.trim()}
+          className="whitespace-nowrap"
+        >
+          {isAnalyzing ? (
+            <AiOutlineLoading3Quarters className="animate-spin h-5 w-5" />
+          ) : (
+            "Analyze"
           )}
-        </div>
-
-        <div>
-          <IconInputField
-            type="text"
-            placeholder="Video Title (Optional)"
-            name="videoTitle"
-            onChange={handleTitleChange}
-            value={videoTitle}
-            icon={<BsCardHeading className="h-5 w-5 text-gray-400" />}
-            className={validationErrors.title ? "border-red-500" : ""}
-          />
-          {validationErrors.title && (
-            <p className="text-red-500 text-sm mt-1">
-              {validationErrors.title}
-            </p>
-          )}
-        </div>
+        </PrimaryButton>
 
         {/* Link Preview with Playable TikTok Embed */}
         {linkResult && linkResult.platform === "tiktok" && (
@@ -426,6 +411,12 @@ const EmbedVideo: React.FC<EmbedVideoProps> = ({
 
             <div className="space-y-1">
               <p className="text-xs text-gray-400 truncate">{videoUrl}</p>
+              {thumbnailUrl && (
+                <p className="text-xs text-gray-500">
+                  Thumbnail URL detected:{" "}
+                  <span className="text-green-600">&#10003;</span>
+                </p>
+              )}
             </div>
           </div>
         )}

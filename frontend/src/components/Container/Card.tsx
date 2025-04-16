@@ -3,18 +3,18 @@ import { ReactNode, forwardRef } from "react";
 interface CardProps {
   children: ReactNode;
   className?: string;
+  onClick?: () => void;
 }
 
 export const Card = forwardRef<HTMLDivElement, CardProps>(
-  ({ children, className = "" }, ref) => {
+  ({ children, className = "", onClick = () => {} }, ref) => {
     return (
-      <div className="min-h-screen flex items-center justify-center p-4">
-        <div
-          ref={ref}
-          className={`w-full max-w-md rounded-xl shadow-lg overflow-hidden bg-[#151316] ${className}`}
-        >
-          <div className="p-8">{children}</div>
-        </div>
+      <div
+        ref={ref}
+        onClick={onClick}
+        className={`w-full max-w-md rounded-xl shadow-lg overflow-hidden bg-[#151316] ${className}`}
+      >
+        <div className="p-6">{children}</div>
       </div>
     );
   }

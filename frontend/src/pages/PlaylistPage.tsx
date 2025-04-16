@@ -1,26 +1,38 @@
-import React, { useState, useEffect } from "react";
 import axios from "axios";
-import { useParams, useNavigate, Link } from "react-router-dom";
+import React, { useState, useEffect } from "react";
+import { useParams, useNavigate, NavLink } from "react-router-dom";
 import { useSelector, useDispatch } from "react-redux";
 import { RootState } from "../app/store";
+import { toast } from "react-toastify";
+import { getUserInfo } from "../features/auth/authSlice.ts";
+import { UserPlaylistData, BACKEND_DOMAIN } from "../types/playlists.ts";
+
 import NavBar from "../components/Navigation/NavBar.tsx";
-import { Card } from "../components/Container";
-import { Header, SecondaryText } from "../components/Typography";
-import { PrimaryButton, SecondaryButton } from "../components/Button";
-import { AiOutlineLoading3Quarters } from "react-icons/ai";
-import { IoWarningOutline } from "react-icons/io5";
-import { IoMdAdd } from "react-icons/io";
 import EmbedVideo from "../components/Forms/EmbedVideo.tsx";
 import VideoCard from "../components/Playlists/VideoCard.tsx";
 import NewPlaylist from "../components/Forms/NewPlaylist.tsx";
-import { toast } from "react-toastify";
-import { getUserInfo } from "../features/auth/authSlice.ts";
+import TagCard from "../components/Playlists/TagCard.tsx";
+import { Card } from "../components/Container";
+import { Header, SecondaryText } from "../components/Typography";
 import {
-  UserPlaylistData,
-  VideoData,
-  BACKEND_DOMAIN,
-} from "../types/playlists.ts";
+  PrimaryButton,
+  SecondaryButton,
+  ActionButton,
+} from "../components/Button";
 
+import { AiOutlineLoading3Quarters } from "react-icons/ai";
+import { IoWarningOutline } from "react-icons/io5";
+import { IoMdAdd } from "react-icons/io";
+import { FaRegHeart, FaHeart, FaShare } from "react-icons/fa";
+import { MdEdit, MdDelete } from "react-icons/md";
+
+/**
+ * PlaylistPage component displays a user's playlist with options to like, share,
+ * edit, delete, and add videos. It handles fetching playlist data, user interactions,
+ * and conditional rendering based on permissions and auth status.
+ *
+ * @component
+ */
 const PlaylistPage: React.FC = () => {
   const { username, playlistId } = useParams<{
     username: string;
@@ -41,31 +53,30 @@ const PlaylistPage: React.FC = () => {
   const [isEditModalOpen, setIsEditModalOpen] = useState<boolean>(false);
   const [isDeleting, setIsDeleting] = useState<boolean>(false);
 
-  // Check if the current user is the owner of the playlist
   const isOwner = user && playlist?.user?.id === userInfo?.id;
 
-  // Ensure we have userInfo
   useEffect(() => {
     if (user && Object.keys(userInfo || {}).length === 0) {
       dispatch(getUserInfo() as any);
     }
   }, [user, userInfo, dispatch]);
 
-  // Fetch playlist details whenever component mounts,
-  // when playlistId changes, or when auth state changes
   useEffect(() => {
     if (playlistId) {
       fetchPlaylistDetails();
     }
   }, [playlistId, user, userInfo]);
 
+  /**
+   * Returns the current authentication token from user state or local storage.
+   *
+   * @returns {string | null} The JWT token if available, otherwise null.
+   */
   const getAuthToken = (): string | null => {
-    // First try from Redux state
     if (user?.access) {
       return user.access;
     }
 
-    // Then fallback to localStorage
     try {
       const storedUser = localStorage.getItem("user");
       if (storedUser) {
@@ -79,6 +90,12 @@ const PlaylistPage: React.FC = () => {
     return null;
   };
 
+  /**
+   * Fetches detailed playlist data from the backend API using the playlistId from URL params.
+   *
+   * @async
+   * @returns {Promise<void>} A promise that resolves once the playlist data has been fetched.
+   */
   const fetchPlaylistDetails = async (): Promise<void> => {
     setIsLoading(true);
     setError(null);
@@ -105,9 +122,11 @@ const PlaylistPage: React.FC = () => {
         } else if (err.response.status === 403) {
           setError("You don't have permission to view this playlist");
         } else if (err.response.status === 401) {
-          // Token might be expired, try to refresh or redirect to login
-          setError("Session expired. Please log in again.");
-          // Optionally, redirect to login here
+          toast.error("Session expired. Please log in again", {
+            theme: "dark",
+          });
+          localStorage.removeItem("user");
+          navigate("/login");
         } else {
           setError("Failed to load playlist details");
         }
@@ -117,6 +136,13 @@ const PlaylistPage: React.FC = () => {
     }
   };
 
+  /**
+   * Handles the addition of a new TikTok video to the current playlist.
+   * Validates URL, retrieves token, makes POST request, and updates state.
+   *
+   * @async
+   * @returns {Promise<void>} A promise that resolves after attempting to add a video.
+   */
   const handleAddVideo = async (): Promise<void> => {
     if (!newVideoUrl.trim()) {
       return;
@@ -125,7 +151,6 @@ const PlaylistPage: React.FC = () => {
     setIsSubmitting(true);
 
     try {
-      // Extract TikTok ID from URL (simplified extraction, might need adjustment)
       const tiktokId = newVideoUrl.split("/").pop()?.split("?")[0] || "";
 
       const token = getAuthToken();
@@ -152,7 +177,6 @@ const PlaylistPage: React.FC = () => {
         }
       );
 
-      // Update the local state with the new video
       setPlaylist((prev) => {
         if (!prev) return prev;
         return {
@@ -162,7 +186,6 @@ const PlaylistPage: React.FC = () => {
         };
       });
 
-      // Reset form
       setNewVideoUrl("");
       setNewVideoTitle("");
       setIsAddingVideo(false);
@@ -188,6 +211,13 @@ const PlaylistPage: React.FC = () => {
     }
   };
 
+  /**
+   * Handles liking or unliking the playlist.
+   * Sends a POST request to the backend and updates the local like state.
+   *
+   * @async
+   * @returns {Promise<void>} A promise that resolves once the like state is updated.
+   */
   const handleLikePlaylist = async (): Promise<void> => {
     if (!user) {
       navigate("/login");
@@ -200,11 +230,12 @@ const PlaylistPage: React.FC = () => {
         toast.error("You need to be logged in to like playlists", {
           theme: "dark",
         });
+        localStorage.removeItem("user");
         navigate("/login");
         return;
       }
 
-      const response = await axios.post(
+      await axios.post(
         `${BACKEND_DOMAIN}/api/v1/playlists/${playlistId}/like/`,
         {},
         {
@@ -214,7 +245,6 @@ const PlaylistPage: React.FC = () => {
         }
       );
 
-      // Update the local state
       setPlaylist((prev) => {
         if (!prev) return prev;
         return {
@@ -234,11 +264,18 @@ const PlaylistPage: React.FC = () => {
         toast.error("Session expired. Please log in again", {
           theme: "dark",
         });
+        localStorage.removeItem("user");
         navigate("/login");
       }
     }
   };
 
+  /**
+   * Shares the current playlist by sending a POST request and copying the URL to clipboard.
+   *
+   * @async
+   * @returns {Promise<void>} A promise that resolves once the playlist has been shared.
+   */
   const handleSharePlaylist = async (): Promise<void> => {
     try {
       const token = getAuthToken();
@@ -251,10 +288,8 @@ const PlaylistPage: React.FC = () => {
         }
       );
 
-      // Copy URL to clipboard
       navigator.clipboard.writeText(window.location.href);
 
-      // Update the local state
       setPlaylist((prev) => {
         if (!prev) return prev;
         return {
@@ -274,16 +309,14 @@ const PlaylistPage: React.FC = () => {
     }
   };
 
-  // Function to safely get thumbnail URL, fixing the TypeScript issue
-  const getThumbnailUrl = (video: VideoData): string => {
-    if (video.custom_thumbnail) {
-      return `${BACKEND_DOMAIN}${video.custom_thumbnail}`;
-    } else if (video.thumbnail_url) {
-      return video.thumbnail_url;
-    }
-    return ""; // Return empty string as fallback
-  };
-
+  /**
+   * Removes a video from the playlist.
+   * Only available if the current user is the owner of the playlist.
+   *
+   * @async
+   * @param {number} videoId - The ID of the video to be removed.
+   * @returns {Promise<void>} A promise that resolves once the video has been removed.
+   */
   const handleRemoveVideo = async (videoId: number): Promise<void> => {
     if (!isOwner) return;
 
@@ -293,6 +326,7 @@ const PlaylistPage: React.FC = () => {
         toast.error("You need to be logged in to remove videos", {
           theme: "dark",
         });
+        localStorage.removeItem("user");
         navigate("/login");
         return;
       }
@@ -303,7 +337,6 @@ const PlaylistPage: React.FC = () => {
         },
       });
 
-      // Update local state by filtering out the removed video
       setPlaylist((prev) => {
         if (!prev) return prev;
         return {
@@ -322,6 +355,7 @@ const PlaylistPage: React.FC = () => {
         toast.error("Session expired. Please log in again", {
           theme: "dark",
         });
+        localStorage.removeItem("user");
         navigate("/login");
       } else {
         setError("Failed to remove video");
@@ -329,10 +363,13 @@ const PlaylistPage: React.FC = () => {
     }
   };
 
-  // Handle playlist edit through NewPlaylist component
+  /**
+   * Handles the result of a playlist being edited by updating the local state.
+   *
+   * @param {any} updatedPlaylist - The updated playlist object with new fields like title, tags, etc.
+   */
   const handlePlaylistUpdated = (updatedPlaylist: any): void => {
     setIsEditModalOpen(false);
-    // Merge the updated playlist data with existing playlist data
     setPlaylist((prev) => {
       if (!prev) return updatedPlaylist;
       return {
@@ -350,7 +387,13 @@ const PlaylistPage: React.FC = () => {
     });
   };
 
-  // Handle playlist deletion
+  /**
+   * Deletes the current playlist.
+   * Prompts user confirmation and handles auth and API call logic.
+   *
+   * @async
+   * @returns {Promise<void>} A promise that resolves after the playlist is deleted.
+   */
   const handleDeletePlaylist = async (): Promise<void> => {
     if (!playlist || !isOwner) return;
 
@@ -365,6 +408,7 @@ const PlaylistPage: React.FC = () => {
           toast.error("You need to be logged in to delete this playlist", {
             theme: "dark",
           });
+          localStorage.removeItem("user");
           navigate("/login");
           return;
         }
@@ -390,6 +434,7 @@ const PlaylistPage: React.FC = () => {
           toast.error("Session expired. Please log in again", {
             theme: "dark",
           });
+          localStorage.removeItem("user");
           navigate("/login");
         } else {
           toast.error("Failed to delete playlist", {
@@ -448,9 +493,72 @@ const PlaylistPage: React.FC = () => {
 
   return (
     <>
+      {/* Add Video Form */}
+      {isAddingVideo && (
+        <Card className="mb-8 p-6">
+          <Header text="Add Video" className="mb-4" />
+          <div className="space-y-4">
+            <div>
+              <label
+                htmlFor="videoUrl"
+                className="block text-sm font-medium text-gray-700 mb-1"
+              >
+                TikTok URL*
+              </label>
+              <input
+                id="videoUrl"
+                type="text"
+                value={newVideoUrl}
+                onChange={(e) => setNewVideoUrl(e.target.value)}
+                placeholder="https://www.tiktok.com/@username/video/1234567890"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                required
+              />
+            </div>
+
+            <div>
+              <label
+                htmlFor="videoTitle"
+                className="block text-sm font-medium text-gray-700 mb-1"
+              >
+                Title (Optional)
+              </label>
+              <input
+                id="videoTitle"
+                type="text"
+                value={newVideoTitle}
+                onChange={(e) => setNewVideoTitle(e.target.value)}
+                placeholder="Enter a title for this video"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+              />
+            </div>
+
+            <div className="flex gap-3">
+              <PrimaryButton
+                onClick={handleAddVideo}
+                disabled={!newVideoUrl.trim() || isSubmitting}
+                className="px-4 py-2"
+              >
+                {isSubmitting ? (
+                  <AiOutlineLoading3Quarters className="animate-spin h-5 w-5" />
+                ) : (
+                  "Add Video"
+                )}
+              </PrimaryButton>
+
+              <SecondaryButton
+                onClick={() => setIsAddingVideo(false)}
+                className="px-4 py-2"
+              >
+                Cancel
+              </SecondaryButton>
+            </div>
+          </div>
+        </Card>
+      )}
+
       <NavBar />
       <div className="container mx-auto p-6">
-        {/* Edit Playlist Modal */}
         {isOwner && (
           <>
             <NewPlaylist
@@ -473,7 +581,6 @@ const PlaylistPage: React.FC = () => {
                   };
                 });
 
-                // Add toast message here
                 toast.success(
                   `Video "${newVideo.title || "Untitled"}" added to playlist!`,
                   {
@@ -503,210 +610,121 @@ const PlaylistPage: React.FC = () => {
               <div className="text-gray-400 text-6xl">🎵</div>
             )}
           </div>
-
-          <div className="flex-1">
+          <div className="flex flex-col justify-end flex-1">
             <Header
               text={playlist.title}
               className="text-2xl md:text-3xl mb-2"
             />
-            <p className="text-sm text-gray-500 mb-4">
+            <SecondaryText
+              text={playlist.description || ""}
+              className="mb-4 text-gray-400"
+            />
+            <p className="text-sm text-gray-400 mb-2">
               By{" "}
-              <Link
+              <NavLink
+                className="text-[#c549d4] hover:text-[#b23abc] font-medium"
                 to={`/${playlist.user.username}/profile`}
-                className="text-blue-600 hover:text-blue-800 hover:underline"
               >
                 {playlist.user.username}
-              </Link>{" "}
-              • {playlist.is_public ? "Public" : "Private"}
+              </NavLink>{" "}
+              • {playlist.is_public ? "Public" : "Private"} •{" "}
+              {playlist.video_count}{" "}
+              {playlist.video_count === 1 ? "video" : "videos"}
             </p>
-
-            <p className="mb-4">
-              {playlist.description || "No description provided"}
+            <p className="text-sm text-gray-400">
+              {playlist.view_count}{" "}
+              {playlist.view_count === 1 ? "view" : "views"} •{" "}
+              {playlist.like_count}{" "}
+              {playlist.like_count === 1 ? "like" : "likes"} •{" "}
+              {playlist.share_count}{" "}
+              {playlist.share_count === 1 ? "share" : "shares"}
             </p>
-
-            {playlist.tags && playlist.tags.length > 0 && (
-              <div className="flex flex-wrap gap-2 mb-4">
-                {playlist.tags.map((tag, index) => (
-                  <span
-                    key={index}
-                    className="bg-gray-100 text-gray-600 px-2 py-1 rounded-full text-xs"
-                  >
-                    {tag.name}
-                  </span>
-                ))}
-              </div>
-            )}
-
-            <div className="flex flex-wrap gap-2 text-sm text-gray-500 mb-6">
-              <span>
-                {playlist.video_count}{" "}
-                {playlist.video_count === 1 ? "video" : "videos"}
-              </span>
-              <span>•</span>
-              <span>
-                {playlist.view_count}{" "}
-                {playlist.view_count === 1 ? "view" : "views"}
-              </span>
-              <span>•</span>
-              <span>
-                {playlist.like_count}{" "}
-                {playlist.like_count === 1 ? "like" : "likes"}
-              </span>
-              <span>•</span>
-              <span>
-                {playlist.share_count}{" "}
-                {playlist.share_count === 1 ? "share" : "shares"}
-              </span>
-            </div>
-
-            <div className="flex flex-wrap gap-3">
-              <PrimaryButton
-                onClick={handleLikePlaylist}
-                className={`px-4 py-2 ${
-                  playlist.is_liked ? "bg-pink-600 hover:bg-pink-700" : ""
-                }`}
-              >
-                {playlist.is_liked ? "Liked" : "Like"}
-              </PrimaryButton>
-
-              <SecondaryButton
-                onClick={handleSharePlaylist}
-                className="px-4 py-2"
-              >
-                Share
-              </SecondaryButton>
-
-              {isOwner && (
-                <>
-                  <SecondaryButton
-                    onClick={() => setIsEmbedModalOpen(true)}
-                    className="flex items-center gap-2 px-4 py-2"
-                  >
-                    <IoMdAdd size={18} />
-                    Add Video
-                  </SecondaryButton>
-
-                  <SecondaryButton
-                    onClick={() => setIsEditModalOpen(true)}
-                    className="px-4 py-2"
-                  >
-                    Edit Playlist
-                  </SecondaryButton>
-
-                  <PrimaryButton
-                    onClick={handleDeletePlaylist}
-                    className="px-4 py-2 bg-red-600 hover:bg-red-700"
-                    disabled={isDeleting}
-                  >
-                    {isDeleting ? "Deleting..." : "Delete Playlist"}
-                  </PrimaryButton>
-                </>
-              )}
-            </div>
           </div>
         </div>
-
-        {/* Add Video Form */}
-        {isAddingVideo && (
-          <Card className="mb-8 p-6">
-            <Header text="Add Video" className="mb-4" />
-            <div className="space-y-4">
-              <div>
-                <label
-                  htmlFor="videoUrl"
-                  className="block text-sm font-medium text-gray-700 mb-1"
-                >
-                  TikTok URL*
-                </label>
-                <input
-                  id="videoUrl"
-                  type="text"
-                  value={newVideoUrl}
-                  onChange={(e) => setNewVideoUrl(e.target.value)}
-                  placeholder="https://www.tiktok.com/@username/video/1234567890"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-                  required
-                />
-              </div>
-
-              <div>
-                <label
-                  htmlFor="videoTitle"
-                  className="block text-sm font-medium text-gray-700 mb-1"
-                >
-                  Title (Optional)
-                </label>
-                <input
-                  id="videoTitle"
-                  type="text"
-                  value={newVideoTitle}
-                  onChange={(e) => setNewVideoTitle(e.target.value)}
-                  placeholder="Enter a title for this video"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-                />
-              </div>
-
-              <div className="flex gap-3">
-                <PrimaryButton
-                  onClick={handleAddVideo}
-                  disabled={!newVideoUrl.trim() || isSubmitting}
-                  className="px-4 py-2"
-                >
-                  {isSubmitting ? (
-                    <AiOutlineLoading3Quarters className="animate-spin h-5 w-5" />
-                  ) : (
-                    "Add Video"
-                  )}
-                </PrimaryButton>
-
-                <SecondaryButton
-                  onClick={() => setIsAddingVideo(false)}
-                  className="px-4 py-2"
-                >
-                  Cancel
-                </SecondaryButton>
-              </div>
+        <div>
+          {playlist.tags && playlist.tags.length > 0 && (
+            <div className="flex flex-wrap gap-2 mb-4">
+              <Header text="Tags: " className="mb-2 text-xlg" />
+              {playlist.tags.map((tag, index) => (
+                <TagCard key={index} index={index} tag={tag} />
+              ))}
             </div>
-          </Card>
-        )}
+          )}
+        </div>
+
+        {/* Playlist Actions */}
+        <div className="flex flex-wrap gap-2">
+          {isOwner && (
+            <>
+              <ActionButton
+                icon={<IoMdAdd className="h-7 w-7" />}
+                onClick={() => setIsEmbedModalOpen(true)}
+              />
+              <ActionButton
+                icon={<MdEdit className="h-7 w-7" />}
+                onClick={() => setIsEditModalOpen(true)}
+              />
+              <ActionButton
+                icon={<MdDelete className="h-7 w-7" />}
+                disabled={isDeleting}
+                onClick={handleDeletePlaylist}
+              />
+            </>
+          )}
+          <ActionButton
+            icon={
+              playlist.is_liked ? (
+                <FaHeart className="h-7 w-7" />
+              ) : (
+                <FaRegHeart className="h-7 w-7" />
+              )
+            }
+            onClick={handleLikePlaylist}
+          />
+          <ActionButton
+            icon={<FaShare className="h-7 w-7" />}
+            onClick={handleSharePlaylist}
+          />
+        </div>
 
         {/* Videos List */}
-        <Header text="Videos" className="mb-4" />
-
-        {playlist.videos.length === 0 ? (
-          <div className="text-center py-16 bg-gray-50 rounded-lg">
-            <div className="text-4xl mb-4">📼</div>
-            <Header text="No Videos Yet" />
-            <SecondaryText
-              text={
-                isOwner
-                  ? "Add your first video to get started!"
-                  : "This playlist doesn't have any videos yet."
-              }
-              className="text-gray-400 mt-2"
-            />
-            {isOwner && !isAddingVideo && (
-              <PrimaryButton
-                onClick={() => setIsEmbedModalOpen(true)}
-                className="mt-6 flex items-center gap-2 mx-auto"
-              >
-                <IoMdAdd size={18} />
-                Add Video
-              </PrimaryButton>
-            )}
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {playlist.videos.map((video) => (
-              <VideoCard
-                key={video.id}
-                video={video}
-                isOwner={isOwner}
-                onRemove={handleRemoveVideo}
+        <div>
+          <Header text="Videos: " className="mb-4 mt-4" />
+          {playlist.videos.length === 0 ? (
+            <div className="text-center py-16 bg-gray-50 rounded-lg">
+              <div className="text-4xl mb-4">📼</div>
+              <Header text="No Videos Yet" />
+              <SecondaryText
+                text={
+                  isOwner
+                    ? "Add your first video to get started!"
+                    : "This playlist doesn't have any videos yet."
+                }
+                className="text-gray-400 mt-2"
               />
-            ))}
-          </div>
-        )}
+              {isOwner && !isAddingVideo && (
+                <PrimaryButton
+                  onClick={() => setIsEmbedModalOpen(true)}
+                  className="mt-6 flex items-center gap-2 mx-auto"
+                >
+                  <IoMdAdd size={18} />
+                  Add Video
+                </PrimaryButton>
+              )}
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {playlist.videos.map((video) => (
+                <VideoCard
+                  key={video.id}
+                  video={video}
+                  isOwner={isOwner}
+                  onRemove={handleRemoveVideo}
+                />
+              ))}
+            </div>
+          )}
+        </div>
       </div>
     </>
   );

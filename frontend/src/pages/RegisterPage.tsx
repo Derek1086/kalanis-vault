@@ -111,7 +111,7 @@ const RegisterPage = () => {
   }, [isError, isSuccess, user, navigate, dispatch, message]);
 
   return (
-    <>
+    <div className="min-h-screen flex items-center justify-center p-4">
       <Card>
         <div className="flex flex-col items-center mb-6">
           <Header text="Create Account" />
@@ -194,7 +194,7 @@ const RegisterPage = () => {
           </div>
         </form>
       </Card>
-    </>
+    </div>
   );
 };
 

@@ -38,7 +38,7 @@ const CarouselBar: React.FC<CarouselBarProps> = ({
 
   return (
     <div className="container mx-auto py-8">
-      <div className="flex items-center justify-between mb-6 mx-[50px]">
+      <div className="flex items-center justify-between mb-6 mx-[70px]">
         <Header text={title} className="text-3xl font-bold" />
         <div className="flex items-center space-x-2">
           <IconButton

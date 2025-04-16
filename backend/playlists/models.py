@@ -95,7 +95,7 @@ class Video(models.Model):
     title = models.CharField(_("Title"), max_length=200, blank=True, null=True)
     tiktok_url = models.URLField(_("TikTok URL"))
     tiktok_id = models.CharField(_("TikTok ID"), max_length=100)
-    thumbnail_url = models.URLField(_("Thumbnail URL"), blank=True, null=True)
+    thumbnail_url = models.URLField(_("Thumbnail URL"), max_length=2000, blank=True, null=True)
     custom_thumbnail = models.ImageField(
         _("Custom Thumbnail"),
         upload_to="video_thumbnails/",

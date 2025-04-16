@@ -1,26 +1,37 @@
+import axios from "axios";
 import { useState, useEffect } from "react";
 import { useSelector, useDispatch } from "react-redux";
-import axios from "axios";
+import { useNavigate } from "react-router-dom";
 import { RootState } from "../app/store.tsx";
 import { getUserInfo } from "../features/auth/authSlice";
+import { UserPlaylistData, BACKEND_DOMAIN } from "../types/playlists.ts";
 
 import NavBar from "../components/Navigation/NavBar.tsx";
 import CarouselBar from "../components/Navigation/CarouselBar.tsx";
 import NewPlaylist from "../components/Forms/NewPlaylist.tsx";
+import PlaylistCard from "../components/Playlists/PlaylistCard.tsx";
 import { Header, SecondaryText } from "../components/Typography";
 import { PrimaryIconButton } from "../components/Button/PrimaryIconButton.tsx";
-import PlaylistCard from "../components/Playlists/PlaylistCard.tsx";
-import { UserPlaylistData, BACKEND_DOMAIN } from "../types/playlists.ts";
+
 import { AiOutlineLoading3Quarters } from "react-icons/ai";
 import { IoWarningOutline } from "react-icons/io5";
 import { CiCirclePlus } from "react-icons/ci";
 
+/**
+ * HomePage Component
+ *
+ * Displays the main dashboard for authenticated users.
+ * Includes sections for user playlists, liked playlists, and other recommended sections.
+ * Also provides the ability to create new playlists.
+ *
+ * @component
+ */
 const HomePage = () => {
+  const navigate = useNavigate();
   const dispatch = useDispatch();
   const { user, userInfo } = useSelector((state: RootState) => state.auth);
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
 
-  // State for user's playlists
   const [userPlaylists, setUserPlaylists] = useState<UserPlaylistData[]>([]);
   const [likedPlaylists, setLikedPlaylists] = useState<UserPlaylistData[]>([]);
   const [isLoadingUserPlaylists, setIsLoadingUserPlaylists] =
@@ -40,6 +51,9 @@ const HomePage = () => {
     }
   }, [user, userInfo, dispatch]);
 
+  /**
+   * Fetches both user-created and liked playlists on component mount or user login state change.
+   */
   useEffect(() => {
     if (user) {
       fetchUserPlaylists();
@@ -50,6 +64,10 @@ const HomePage = () => {
     }
   }, [user]);
 
+  /**
+   * Fetches playlists created by the logged-in user.
+   * Handles token authentication and sets appropriate loading/error states.
+   */
   const fetchUserPlaylists = async (): Promise<void> => {
     setIsLoadingUserPlaylists(true);
     setUserPlaylistsError(null);
@@ -82,9 +100,9 @@ const HomePage = () => {
 
       if (axios.isAxiosError(err) && err.response) {
         if (err.response.status === 401) {
-          setUserPlaylistsError(
-            "Your session has expired. Please log in again."
-          );
+          localStorage.removeItem("user");
+          navigate("/login");
+          return;
         } else {
           setUserPlaylistsError("Failed to load your playlists.");
         }
@@ -94,6 +112,10 @@ const HomePage = () => {
     }
   };
 
+  /**
+   * Fetches playlists liked by the logged-in user.
+   * Handles token authentication and sets appropriate loading/error states.
+   */
   const fetchLikedPlaylists = async (): Promise<void> => {
     setIsLoadingLikedPlaylists(true);
     setLikedPlaylistsError(null);
@@ -126,9 +148,9 @@ const HomePage = () => {
 
       if (axios.isAxiosError(err) && err.response) {
         if (err.response.status === 401) {
-          setLikedPlaylistsError(
-            "Your session has expired. Please log in again."
-          );
+          localStorage.removeItem("user");
+          navigate("/login");
+          return;
         } else {
           setLikedPlaylistsError("Failed to load liked playlists.");
         }
@@ -138,27 +160,20 @@ const HomePage = () => {
     }
   };
 
-  const handlePlaylistCreated = (playlist: any) => {
+  /**
+   * Callback when a new playlist is successfully created.
+   * Adds the new playlist to the top of the user's playlist list.
+   *
+   * @param {UserPlaylistData} playlist - The newly created playlist
+   */
+  const handlePlaylistCreated = (playlist: UserPlaylistData) => {
     console.log("New playlist created:", playlist);
-    // Add the new playlist to userPlaylists
     setUserPlaylists([playlist, ...userPlaylists]);
   };
 
-  const handlePlaylistDeleted = (playlistId: number): void => {
-    // Remove deleted playlist from state
-    setUserPlaylists(
-      userPlaylists.filter((playlist) => playlist.id !== playlistId)
-    );
-  };
-
-  const handlePlaylistUnliked = (playlistId: number): void => {
-    // Remove unliked playlist from liked playlists state
-    setLikedPlaylists(
-      likedPlaylists.filter((playlist) => playlist.id !== playlistId)
-    );
-  };
-
-  // Render playlist cards for carousel
+  /**
+   * Renders the user's playlists section, including loading and error handling.
+   */
   const renderUserPlaylists = () => {
     if (isLoadingUserPlaylists) {
       return (
@@ -177,31 +192,20 @@ const HomePage = () => {
       );
     }
 
-    if (userPlaylists.length === 0) {
-      return (
-        <div className="mx-[50px] text-center py-8 bg-gray-50 rounded-lg">
-          <SecondaryText
-            text="Create your first playlist to get started!"
-            className="text-gray-400"
-          />
-        </div>
-      );
-    }
-
     return (
       <div className="flex space-x-6 mx-[50px] overflow-x-auto pb-4">
         {userPlaylists.map((playlist) => (
           <div key={playlist.id} className="min-w-[250px]">
-            <PlaylistCard
-              playlist={playlist}
-              onDelete={handlePlaylistDeleted}
-            />
+            <PlaylistCard playlist={playlist} />
           </div>
         ))}
       </div>
     );
   };
 
+  /**
+   * Renders the user's liked playlists section, including loading and error handling.
+   */
   const renderLikedPlaylists = () => {
     if (isLoadingLikedPlaylists) {
       return (
@@ -220,26 +224,11 @@ const HomePage = () => {
       );
     }
 
-    if (likedPlaylists.length === 0) {
-      return (
-        <div className="mx-[50px] text-center py-8 bg-gray-50 rounded-lg">
-          <SecondaryText
-            text="Like playlists to see them here!"
-            className="text-gray-400"
-          />
-        </div>
-      );
-    }
-
     return (
       <div className="flex space-x-6 mx-[50px] overflow-x-auto pb-4">
         {likedPlaylists.map((playlist) => (
           <div key={playlist.id} className="min-w-[250px]">
-            <PlaylistCard
-              playlist={playlist}
-              onUnlike={handlePlaylistUnliked}
-              isLiked={true}
-            />
+            <PlaylistCard playlist={playlist} />
           </div>
         ))}
       </div>
@@ -256,7 +245,7 @@ const HomePage = () => {
         onPlaylistCreated={handlePlaylistCreated}
       />
 
-      <div className="relative h-80 bg-gradient-to-r from-[#c549d4] to-[#9b36b7] overflow-hidden flex items-center">
+      <div className="relative h-60 bg-gradient-to-r from-[#c549d4] to-[#9b36b7] overflow-hidden flex items-center">
         <div className="max-w-2xl text-white mx-[75px]">
           <Header text="Create, Collect, Share" className="text-4xl mb-2" />
           <SecondaryText
@@ -276,20 +265,20 @@ const HomePage = () => {
         </div>
       </div>
 
-      {/* Your Playlists Section */}
-      <CarouselBar title="Your Playlists" totalItems={userPlaylists.length}>
-        {renderUserPlaylists()}
-      </CarouselBar>
+      {userPlaylists.length > 0 && (
+        <CarouselBar title="Your Playlists" totalItems={userPlaylists.length}>
+          {renderUserPlaylists()}
+        </CarouselBar>
+      )}
+      {likedPlaylists.length > 0 && (
+        <CarouselBar
+          title="Your Liked Playlists"
+          totalItems={likedPlaylists.length}
+        >
+          {renderLikedPlaylists()}
+        </CarouselBar>
+      )}
 
-      {/* Your Liked Playlists Section */}
-      <CarouselBar
-        title="Your Liked Playlists"
-        totalItems={likedPlaylists.length}
-      >
-        {renderLikedPlaylists()}
-      </CarouselBar>
-
-      {/* Keep the other carousel sections */}
       <CarouselBar title="Trending Now" totalItems={0} />
       <CarouselBar title="Popular Playlists" totalItems={0} />
       <CarouselBar title="Recommended Playlists" totalItems={0} />

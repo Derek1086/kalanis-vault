@@ -20,6 +20,7 @@ export const IconButton: React.FC<IconButtonProps> = ({
   return (
     <button
       onClick={onClick}
+      disabled={disabled}
       className={`p-2 rounded-full text-gray-400 hover:bg-gray-400 hover:text-gray-900 cursor-pointer transition ${className}`}
     >
       {icon}

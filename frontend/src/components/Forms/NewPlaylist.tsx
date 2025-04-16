@@ -16,7 +16,7 @@ import { MdOutlineImage } from "react-icons/md";
 import { IoAdd, IoClose } from "react-icons/io5";
 
 import {
-  PlaylistData,
+  UserPlaylistData,
   ValidationErrors,
   BACKEND_DOMAIN,
 } from "../../types/playlists";
@@ -24,9 +24,9 @@ import {
 interface NewPlaylistProps {
   isOpen: boolean;
   onClose: () => void;
-  onPlaylistCreated?: (playlist: PlaylistData) => void;
+  onPlaylistCreated?: (playlist: UserPlaylistData) => void;
   editMode?: boolean;
-  playlistData?: PlaylistData;
+  playlistData?: UserPlaylistData;
 }
 const NewPlaylist: React.FC<NewPlaylistProps> = ({
   isOpen,
