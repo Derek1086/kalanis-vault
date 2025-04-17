@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import axios from "axios";
 import { AiOutlineLoading3Quarters } from "react-icons/ai";
@@ -110,11 +110,6 @@ const SearchPage = () => {
       .sort((a, b) => b.relevanceScore - a.relevanceScore);
   };
 
-  // Function to handle when a playlist is unliked
-  const handlePlaylistUnliked = (playlistId: number): void => {
-    setPlaylists(playlists.filter((playlist) => playlist.id !== playlistId));
-  };
-
   return (
     <>
       <NavBar />
@@ -149,12 +144,7 @@ const SearchPage = () => {
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 mt-6">
             {playlists.map((playlist) => (
-              <PlaylistCard
-                key={playlist.id}
-                playlist={playlist}
-                onUnlike={handlePlaylistUnliked}
-                isLiked={playlist.is_liked}
-              />
+              <PlaylistCard key={playlist.id} playlist={playlist} />
             ))}
           </div>
         )}

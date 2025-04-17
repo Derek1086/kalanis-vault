@@ -10,7 +10,7 @@ import { UserPlaylistData, BACKEND_DOMAIN } from "../types/playlists.ts";
 import NavBar from "../components/Navigation/NavBar.tsx";
 import EmbedVideo from "../components/Forms/EmbedVideo.tsx";
 import VideoCard from "../components/Playlists/VideoCard.tsx";
-import NewPlaylist from "../components/Forms/NewPlaylist.tsx";
+import EditPlaylist from "../components/Forms/EditPlaylist.tsx";
 import TagCard from "../components/Playlists/TagCard.tsx";
 import { Card } from "../components/Container";
 import { Header, SecondaryText } from "../components/Typography";
@@ -364,14 +364,15 @@ const PlaylistPage: React.FC = () => {
   };
 
   /**
-   * Handles the result of a playlist being edited by updating the local state.
+   * Handles the result of a playlist being updated by updating the local state.
    *
-   * @param {any} updatedPlaylist - The updated playlist object with new fields like title, tags, etc.
+   * @param {UserPlaylistData} updatedPlaylist - The updated playlist data
    */
-  const handlePlaylistUpdated = (updatedPlaylist: any): void => {
+  const handlePlaylistUpdated = (updatedPlaylist: UserPlaylistData): void => {
     setIsEditModalOpen(false);
     setPlaylist((prev) => {
       if (!prev) return updatedPlaylist;
+
       return {
         ...prev,
         title: updatedPlaylist.title,
@@ -380,10 +381,6 @@ const PlaylistPage: React.FC = () => {
         is_public: updatedPlaylist.is_public,
         tags: updatedPlaylist.tags,
       };
-    });
-
-    toast.success("Playlist updated successfully", {
-      theme: "dark",
     });
   };
 
@@ -561,11 +558,11 @@ const PlaylistPage: React.FC = () => {
       <div className="container mx-auto p-6">
         {isOwner && (
           <>
-            <NewPlaylist
+            {/* Use EditPlaylist instead of NewPlaylist for editing */}
+            <EditPlaylist
               isOpen={isEditModalOpen}
               onClose={() => setIsEditModalOpen(false)}
-              onPlaylistCreated={handlePlaylistUpdated}
-              editMode={true}
+              onPlaylistUpdated={handlePlaylistUpdated}
               playlistData={playlist}
             />
             <EmbedVideo
@@ -689,40 +686,20 @@ const PlaylistPage: React.FC = () => {
 
         {/* Videos List */}
         <div>
-          <Header text="Videos: " className="mb-4 mt-4" />
-          {playlist.videos.length === 0 ? (
-            <div className="text-center py-16 bg-gray-50 rounded-lg">
-              <div className="text-4xl mb-4">📼</div>
-              <Header text="No Videos Yet" />
-              <SecondaryText
-                text={
-                  isOwner
-                    ? "Add your first video to get started!"
-                    : "This playlist doesn't have any videos yet."
-                }
-                className="text-gray-400 mt-2"
-              />
-              {isOwner && !isAddingVideo && (
-                <PrimaryButton
-                  onClick={() => setIsEmbedModalOpen(true)}
-                  className="mt-6 flex items-center gap-2 mx-auto"
-                >
-                  <IoMdAdd size={18} />
-                  Add Video
-                </PrimaryButton>
-              )}
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {playlist.videos.map((video) => (
-                <VideoCard
-                  key={video.id}
-                  video={video}
-                  isOwner={isOwner}
-                  onRemove={handleRemoveVideo}
-                />
-              ))}
-            </div>
+          {playlist.videos.length > 0 && (
+            <>
+              <Header text="Videos: " className="mb-4 mt-4" />
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {playlist.videos.map((video) => (
+                  <VideoCard
+                    key={video.id}
+                    video={video}
+                    isOwner={isOwner}
+                    onRemove={handleRemoveVideo}
+                  />
+                ))}
+              </div>
+            </>
           )}
         </div>
       </div>

@@ -1,17 +1,19 @@
-import React, { useState, useEffect } from "react";
 import axios from "axios";
-import NavBar from "../components/Navigation/NavBar.tsx";
+import React, { useState, useEffect } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { RootState } from "../app/store";
 import { getUserInfo } from "../features/auth/authSlice";
-import { Header, SecondaryText } from "../components/Typography";
-import { PrimaryButton } from "../components/Button";
+import { UserPlaylistData, BACKEND_DOMAIN } from "../types/playlists.ts";
+
+import NavBar from "../components/Navigation/NavBar.tsx";
 import NewPlaylist from "../components/Forms/NewPlaylist.tsx";
 import PlaylistCard from "../components/Playlists/PlaylistCard.tsx";
+import { Header } from "../components/Typography";
+import { PrimaryButton } from "../components/Button";
+
 import { AiOutlineLoading3Quarters } from "react-icons/ai";
 import { IoWarningOutline } from "react-icons/io5";
 import { IoMdAdd } from "react-icons/io";
-import { UserPlaylistData, BACKEND_DOMAIN } from "../types/playlists.ts";
 
 const MyPlaylists: React.FC = () => {
   const dispatch = useDispatch();
@@ -82,30 +84,21 @@ const MyPlaylists: React.FC = () => {
     }
   };
 
-  // Use any type to bypass the type checking issue
   const handlePlaylistCreated = (newPlaylist: any): void => {
-    // Check if this is an update or a new playlist
     const existingIndex = playlists.findIndex((p) => p.id === newPlaylist.id);
 
     if (existingIndex >= 0) {
-      // Update existing playlist
       const updatedPlaylists = [...playlists];
       updatedPlaylists[existingIndex] = newPlaylist;
       setPlaylists(updatedPlaylists);
     } else {
-      // Add new playlist to the beginning of the list
       setPlaylists([newPlaylist, ...playlists]);
     }
   };
 
-  const handlePlaylistDeleted = (playlistId: number): void => {
-    // Remove deleted playlist from state
-    setPlaylists(playlists.filter((playlist) => playlist.id !== playlistId));
-  };
-
   return (
     <>
-      <NavBar />
+      <NavBar onCreatePlaylist={() => setIsModalOpen(true)} />
 
       <NewPlaylist
         isOpen={isModalOpen}
@@ -114,15 +107,17 @@ const MyPlaylists: React.FC = () => {
       />
 
       <div className="container mx-auto p-6">
-        <div className="flex justify-between items-center mb-6">
+        <div className="flex justify-between items-center mb-6 mx-[50px]">
           <Header text="My Playlists" />
-          <PrimaryButton
-            onClick={() => setIsModalOpen(true)}
-            className="flex items-center gap-2"
-          >
-            <IoMdAdd size={18} />
-            New Playlist
-          </PrimaryButton>
+          <div>
+            <PrimaryButton
+              onClick={() => setIsModalOpen(true)}
+              className="flex items-center gap-2"
+            >
+              <IoMdAdd size={18} />
+              New Playlist
+            </PrimaryButton>
+          </div>
         </div>
 
         {error && (
@@ -137,29 +132,13 @@ const MyPlaylists: React.FC = () => {
             <AiOutlineLoading3Quarters className="animate-spin h-8 w-8 text-gray-400" />
           </div>
         ) : playlists.length === 0 ? (
-          <div className="text-center py-16 bg-gray-50 rounded-lg">
-            <div className="text-4xl mb-4">📂</div>
+          <div className="text-center">
             <Header text="No Playlists Yet" />
-            <SecondaryText
-              text="Create your first playlist to get started!"
-              className="text-gray-400 mt-2"
-            />
-            <PrimaryButton
-              onClick={() => setIsModalOpen(true)}
-              className="mt-6 flex items-center gap-2 mx-auto"
-            >
-              <IoMdAdd size={18} />
-              Create Playlist
-            </PrimaryButton>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 mx-[50px]">
             {playlists.map((playlist) => (
-              <PlaylistCard
-                key={playlist.id}
-                playlist={playlist}
-                onDelete={handlePlaylistDeleted}
-              />
+              <PlaylistCard key={playlist.id} playlist={playlist} />
             ))}
           </div>
         )}

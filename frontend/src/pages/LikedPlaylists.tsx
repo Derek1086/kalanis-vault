@@ -1,17 +1,29 @@
-import React, { useState, useEffect } from "react";
 import axios from "axios";
-import NavBar from "../components/Navigation/NavBar.tsx";
+import React, { useState, useEffect } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { RootState } from "../app/store";
 import { getUserInfo } from "../features/auth/authSlice";
-import { Header, SecondaryText } from "../components/Typography";
-import { PrimaryButton } from "../components/Button";
-import PlaylistCard from "../components/Playlists/PlaylistCard.tsx";
-import { AiOutlineLoading3Quarters } from "react-icons/ai";
-import { IoWarningOutline } from "react-icons/io5";
 import { Link } from "react-router-dom";
 import { UserPlaylistData, BACKEND_DOMAIN } from "../types/playlists.ts";
 
+import NavBar from "../components/Navigation/NavBar.tsx";
+import NewPlaylist from "../components/Forms/NewPlaylist.tsx";
+import PlaylistCard from "../components/Playlists/PlaylistCard.tsx";
+import { Header } from "../components/Typography";
+import { PrimaryButton } from "../components/Button";
+
+import { AiOutlineLoading3Quarters } from "react-icons/ai";
+import { IoWarningOutline } from "react-icons/io5";
+import { IoMdAdd } from "react-icons/io";
+
+/**
+ * LikedPlaylists Component
+ *
+ * This component displays all playlists the user has liked.
+ * It allows users to view their liked playlists and create new playlists.
+ *
+ * @returns {JSX.Element} The rendered LikedPlaylists component
+ */
 const LikedPlaylists: React.FC = () => {
   const dispatch = useDispatch();
   const { user, userInfo } = useSelector((state: RootState) => state.auth);
@@ -19,6 +31,7 @@ const LikedPlaylists: React.FC = () => {
   const [playlists, setPlaylists] = useState<UserPlaylistData[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
 
   useEffect(() => {
     if (user && Object.keys(userInfo || {}).length === 0) {
@@ -34,6 +47,11 @@ const LikedPlaylists: React.FC = () => {
     }
   }, [user]);
 
+  /**
+   * Fetches liked playlists for the currently logged in user
+   *
+   * @returns {Promise<void>} A promise that resolves when the playlists are fetched
+   */
   const fetchLikedPlaylists = async (): Promise<void> => {
     setIsLoading(true);
     setError(null);
@@ -80,17 +98,36 @@ const LikedPlaylists: React.FC = () => {
     }
   };
 
-  // Update local state when a playlist is unliked
-  const handlePlaylistUnliked = (playlistId: number): void => {
-    setPlaylists(playlists.filter((playlist) => playlist.id !== playlistId));
+  /**
+   * Handles adding a newly created playlist to the list
+   *
+   * @param {any} newPlaylist - The newly created playlist data
+   * @returns {void}
+   */
+  const handlePlaylistCreated = (newPlaylist: any): void => {
+    const existingIndex = playlists.findIndex((p) => p.id === newPlaylist.id);
+
+    if (existingIndex >= 0) {
+      const updatedPlaylists = [...playlists];
+      updatedPlaylists[existingIndex] = newPlaylist;
+      setPlaylists(updatedPlaylists);
+    } else {
+      setPlaylists([newPlaylist, ...playlists]);
+    }
   };
 
   return (
     <>
-      <NavBar />
+      <NavBar onCreatePlaylist={() => setIsModalOpen(true)} />
+
+      <NewPlaylist
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onPlaylistCreated={handlePlaylistCreated}
+      />
 
       <div className="container mx-auto p-6">
-        <div className="flex justify-between items-center mb-6">
+        <div className="flex justify-between items-center mb-6 mx-[50px]">
           <Header text="Liked Playlists" />
           <Link to="/explore">
             <PrimaryButton className="flex items-center gap-2">
@@ -111,28 +148,13 @@ const LikedPlaylists: React.FC = () => {
             <AiOutlineLoading3Quarters className="animate-spin h-8 w-8 text-gray-400" />
           </div>
         ) : playlists.length === 0 ? (
-          <div className="text-center py-16 bg-gray-50 rounded-lg">
-            <div className="text-4xl mb-4">❤️</div>
+          <div className="text-center">
             <Header text="No Liked Playlists Yet" />
-            <SecondaryText
-              text="Explore and like playlists to save them here!"
-              className="text-gray-400 mt-2"
-            />
-            <Link to="/explore">
-              <PrimaryButton className="mt-6 mx-auto">
-                Explore Playlists
-              </PrimaryButton>
-            </Link>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 mx-[50px]">
             {playlists.map((playlist) => (
-              <PlaylistCard
-                key={playlist.id}
-                playlist={playlist}
-                onUnlike={handlePlaylistUnliked}
-                isLiked={true}
-              />
+              <PlaylistCard key={playlist.id} playlist={playlist} />
             ))}
           </div>
         )}

@@ -1,6 +1,5 @@
 import axios from "axios";
 import React, { useRef, useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
 import { useSelector } from "react-redux";
 import { RootState } from "../../app/store";
 import { toast } from "react-toastify";
@@ -22,21 +21,23 @@ import {
   BACKEND_DOMAIN,
 } from "../../types/playlists";
 
-interface NewPlaylistProps {
+interface EditPlaylistProps {
   isOpen: boolean;
   onClose: () => void;
-  onPlaylistCreated?: (playlist: UserPlaylistData) => void;
+  onPlaylistUpdated: (playlist: UserPlaylistData) => void;
+  playlistData: UserPlaylistData;
 }
 
-const NewPlaylist: React.FC<NewPlaylistProps> = ({
+const EditPlaylist: React.FC<EditPlaylistProps> = ({
   isOpen,
   onClose,
-  onPlaylistCreated,
+  onPlaylistUpdated,
+  playlistData,
 }) => {
-  const { user, userInfo } = useSelector((state: RootState) => state.auth);
+  const { user } = useSelector((state: RootState) => state.auth);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
-
+  const [playlistId, setPlaylistId] = useState<number | null>(null);
   const [playlistName, setPlaylistName] = useState("");
   const [playlistDescription, setPlaylistDescription] = useState("");
   const [isPublic, setIsPublic] = useState(true);
@@ -46,26 +47,73 @@ const NewPlaylist: React.FC<NewPlaylistProps> = ({
     {}
   );
 
-  const navigate = useNavigate();
-
   const [tags, setTags] = useState<string[]>([]);
   const [newTag, setNewTag] = useState("");
   const [thumbnail, setThumbnail] = useState<File | null>(null);
   const [thumbnailPreview, setThumbnailPreview] = useState<string | null>(null);
+  const [existingThumbnail, setExistingThumbnail] = useState<string | null>(
+    null
+  );
 
   useEffect(() => {
-    if (isOpen) {
-      setPlaylistName("");
-      setPlaylistDescription("");
-      setIsPublic(true);
-      setTags([]);
-      setThumbnailPreview(null);
+    if (isOpen && playlistData) {
+      setPlaylistId(playlistData.id);
+      setPlaylistName(playlistData.title);
+      setPlaylistDescription(playlistData.description || "");
+      setIsPublic(playlistData.is_public);
+
+      if (playlistData.cover_image) {
+        setExistingThumbnail(playlistData.cover_image);
+        setThumbnailPreview(
+          playlistData.cover_image.startsWith("http")
+            ? playlistData.cover_image
+            : `${BACKEND_DOMAIN}${playlistData.cover_image}`
+        );
+      } else {
+        setExistingThumbnail(null);
+        setThumbnailPreview(null);
+      }
+
+      if (playlistData.id) {
+        fetchPlaylistTags(playlistData.id);
+      } else {
+        setTags([]);
+      }
+
       setError(null);
       setValidationErrors({});
       setNewTag("");
       setThumbnail(null);
     }
-  }, [isOpen]);
+  }, [isOpen, playlistData]);
+
+  const fetchPlaylistTags = async (playlistId: number) => {
+    try {
+      const token = user?.access || localStorage.getItem("accessToken");
+      if (!token) return;
+
+      const response = await axios.get(
+        `${BACKEND_DOMAIN}/api/v1/playlists/${playlistId}/`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (response.data.tags) {
+        const tagNames = response.data.tags.map((tag: any) =>
+          typeof tag === "object" ? tag.name : tag
+        );
+        setTags(tagNames);
+      } else {
+        setTags([]);
+      }
+    } catch (error) {
+      console.error("Error fetching playlist tags:", error);
+      setTags([]);
+    }
+  };
 
   const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setPlaylistName(e.target.value);
@@ -134,7 +182,9 @@ const NewPlaylist: React.FC<NewPlaylistProps> = ({
 
       setThumbnail(file);
       setThumbnailPreview(URL.createObjectURL(file));
+      setExistingThumbnail(null);
 
+      // Clear validation errors
       if (validationErrors.thumbnail) {
         setValidationErrors((prev) => ({ ...prev, thumbnail: undefined }));
       }
@@ -150,6 +200,7 @@ const NewPlaylist: React.FC<NewPlaylistProps> = ({
   const removeThumbnail = () => {
     setThumbnail(null);
     setThumbnailPreview(null);
+    setExistingThumbnail(null);
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
     }
@@ -172,7 +223,7 @@ const NewPlaylist: React.FC<NewPlaylistProps> = ({
       errors.tags = "Maximum of 10 tags allowed";
     }
 
-    if (!thumbnail) {
+    if (!thumbnail && !existingThumbnail) {
       errors.thumbnail = "Thumbnail image is required";
     }
 
@@ -191,7 +242,7 @@ const NewPlaylist: React.FC<NewPlaylistProps> = ({
     const token = user?.access || localStorage.getItem("accessToken");
 
     if (!token) {
-      setError("You must be logged in to create a playlist");
+      setError("You must be logged in to edit a playlist");
       setIsLoading(false);
       return;
     }
@@ -208,6 +259,8 @@ const NewPlaylist: React.FC<NewPlaylistProps> = ({
 
       if (thumbnail) {
         formData.append("cover_image", thumbnail);
+      } else if (existingThumbnail === null) {
+        formData.append("cover_image", "");
       }
 
       if (tags.length > 0) {
@@ -216,8 +269,8 @@ const NewPlaylist: React.FC<NewPlaylistProps> = ({
         });
       }
 
-      const response = await axios.post(
-        `${BACKEND_DOMAIN}/api/v1/playlists/`,
+      const response = await axios.patch(
+        `${BACKEND_DOMAIN}/api/v1/playlists/${playlistId}/`,
         formData,
         {
           headers: {
@@ -227,24 +280,20 @@ const NewPlaylist: React.FC<NewPlaylistProps> = ({
         }
       );
 
-      toast.success(`Created "${playlistName}"`, {
+      toast.success(`Updated "${playlistName}"`, {
         theme: "dark",
       });
 
       setIsLoading(false);
 
-      if (onPlaylistCreated) {
-        onPlaylistCreated(response.data);
+      if (onPlaylistUpdated) {
+        onPlaylistUpdated(response.data);
       }
 
       onClose();
-
-      const username = userInfo?.username || "";
-      const playlistId = response.data.id;
-      navigate(`/${username}/playlists/${playlistId}`);
     } catch (err) {
       setIsLoading(false);
-      console.error("Error creating playlist:", err);
+      console.error("Error updating playlist:", err);
 
       if (axios.isAxiosError(err) && err.response) {
         console.error("Response data:", err.response.data);
@@ -255,7 +304,7 @@ const NewPlaylist: React.FC<NewPlaylistProps> = ({
           setError("Your session has expired. Please log in again.");
         } else {
           setError(
-            "An error occurred while creating your playlist. Please try again."
+            "An error occurred while updating your playlist. Please try again."
           );
         }
       } else {
@@ -268,8 +317,8 @@ const NewPlaylist: React.FC<NewPlaylistProps> = ({
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title="Create New Playlist"
-      description="Create a new playlist to organize your favorite content."
+      title="Edit Playlist"
+      description="Update your playlist details"
     >
       {error && (
         <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4 flex items-center">
@@ -300,7 +349,7 @@ const NewPlaylist: React.FC<NewPlaylistProps> = ({
           onChange={handleDescriptionChange}
           value={playlistDescription}
           rows={3}
-          maxCharacters={200}
+          maxCharacters={500}
           className={validationErrors.description ? "border-red-500" : ""}
         />
         {validationErrors.description && (
@@ -362,7 +411,7 @@ const NewPlaylist: React.FC<NewPlaylistProps> = ({
             {tags.map((tag, index) => (
               <span
                 key={index}
-                className="bg-[#c549d4] py-2 px-4 rounded-full text-sm text-white"
+                className="bg-[#c549d4] py-2 px-3 rounded-full text-sm text-white flex items-center"
               >
                 {tag}
                 <button
@@ -430,7 +479,7 @@ const NewPlaylist: React.FC<NewPlaylistProps> = ({
           {isLoading ? (
             <AiOutlineLoading3Quarters className="animate-spin h-5 w-5" />
           ) : (
-            "Create Playlist"
+            "Update Playlist"
           )}
         </PrimaryButton>
       </form>
@@ -438,4 +487,4 @@ const NewPlaylist: React.FC<NewPlaylistProps> = ({
   );
 };
 
-export default NewPlaylist;
+export default EditPlaylist;

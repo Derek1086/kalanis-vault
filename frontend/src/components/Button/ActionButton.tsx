@@ -17,7 +17,7 @@ export const ActionButton: React.FC<ActionButtonProps> = ({
     <button
       onClick={onClick}
       disabled={disabled}
-      className={`p-4 rounded-full text-white bg-[#c549d4] hover:bg-white hover:text-[#c549d4] cursor-pointer transition ${className}`}
+      className={`p-4 rounded-md text-white bg-[#c549d4] hover:bg-white hover:text-[#c549d4] cursor-pointer transition ${className}`}
     >
       {icon}
     </button>

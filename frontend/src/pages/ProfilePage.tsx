@@ -1,5 +1,5 @@
 import { useSelector, useDispatch } from "react-redux";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { RootState } from "../app/store.tsx";
 import { useState, useEffect } from "react";
 import { getUserInfo } from "../features/auth/authSlice.ts";
@@ -388,40 +388,42 @@ const ProfilePage = () => {
                             People following you
                           </p>
                         </div>
-
-                        <div className="bg-[#232126] p-4 rounded-lg border border-gray-700">
-                          <div className="flex items-center gap-3 mb-2">
-                            <div className="p-2 bg-pink-900 rounded-full">
-                              <CiHeart className="h-5 w-5 text-pink-300" />
+                        <Link to={`/${userInfo?.username}/liked-playlists`}>
+                          <div className="bg-[#232126] p-4 rounded-lg border border-gray-700">
+                            <div className="flex items-center gap-3 mb-2">
+                              <div className="p-2 bg-pink-900 rounded-full">
+                                <CiHeart className="h-5 w-5 text-pink-300" />
+                              </div>
+                              <h3 className="font-medium text-white">
+                                Favorites
+                              </h3>
                             </div>
-                            <h3 className="font-medium text-white">
-                              Favorites
-                            </h3>
+                            <p className="text-2xl font-bold text-white">
+                              {likesCount}
+                            </p>
+                            <p className="text-sm text-gray-400">
+                              Playlists you liked
+                            </p>
                           </div>
-                          <p className="text-2xl font-bold text-white">
-                            {likesCount}
-                          </p>
-                          <p className="text-sm text-gray-400">
-                            Playlists you liked
-                          </p>
-                        </div>
-
-                        <div className="bg-[#232126] p-4 rounded-lg border border-gray-700">
-                          <div className="flex items-center gap-3 mb-2">
-                            <div className="p-2 bg-blue-900 rounded-full">
-                              <CiBoxList className="h-5 w-5 text-blue-300" />
+                        </Link>
+                        <Link to={`/${userInfo?.username}/playlists`}>
+                          <div className="bg-[#232126] p-4 rounded-lg border border-gray-700">
+                            <div className="flex items-center gap-3 mb-2">
+                              <div className="p-2 bg-blue-900 rounded-full">
+                                <CiBoxList className="h-5 w-5 text-blue-300" />
+                              </div>
+                              <h3 className="font-medium text-white">
+                                Playlists
+                              </h3>
                             </div>
-                            <h3 className="font-medium text-white">
-                              Playlists
-                            </h3>
+                            <p className="text-2xl font-bold text-white">
+                              {playlistsCount}
+                            </p>
+                            <p className="text-sm text-gray-400">
+                              Playlists created
+                            </p>
                           </div>
-                          <p className="text-2xl font-bold text-white">
-                            {playlistsCount}
-                          </p>
-                          <p className="text-sm text-gray-400">
-                            Playlists created
-                          </p>
-                        </div>
+                        </Link>
                       </div>
                     </div>
                   </div>
