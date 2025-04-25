@@ -2,7 +2,7 @@ import axios from "axios";
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate, NavLink } from "react-router-dom";
 import { useSelector, useDispatch } from "react-redux";
-import { RootState } from "../app/store";
+import { RootState, AppDispatch } from "../app/store";
 import { toast } from "react-toastify";
 import { getUserInfo } from "../features/auth/authSlice.ts";
 import { UserPlaylistData, BACKEND_DOMAIN } from "../types/playlists.ts";
@@ -39,7 +39,7 @@ const PlaylistPage: React.FC = () => {
     playlistId: string;
   }>();
   const navigate = useNavigate();
-  const dispatch = useDispatch();
+  const dispatch = useDispatch<AppDispatch>();
   const { user, userInfo } = useSelector((state: RootState) => state.auth);
 
   const [isEmbedModalOpen, setIsEmbedModalOpen] = useState<boolean>(false);
@@ -57,7 +57,7 @@ const PlaylistPage: React.FC = () => {
 
   useEffect(() => {
     if (user && Object.keys(userInfo || {}).length === 0) {
-      dispatch(getUserInfo() as any);
+      dispatch(getUserInfo());
     }
   }, [user, userInfo, dispatch]);
 

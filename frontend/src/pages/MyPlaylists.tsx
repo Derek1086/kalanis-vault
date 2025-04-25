@@ -1,7 +1,7 @@
 import axios from "axios";
 import React, { useState, useEffect } from "react";
 import { useSelector, useDispatch } from "react-redux";
-import { RootState } from "../app/store";
+import { RootState, AppDispatch } from "../app/store";
 import { getUserInfo } from "../features/auth/authSlice";
 import { UserPlaylistData, BACKEND_DOMAIN } from "../types/playlists.ts";
 
@@ -16,7 +16,7 @@ import { IoWarningOutline } from "react-icons/io5";
 import { IoMdAdd } from "react-icons/io";
 
 const MyPlaylists: React.FC = () => {
-  const dispatch = useDispatch();
+  const dispatch = useDispatch<AppDispatch>();
   const { user, userInfo } = useSelector((state: RootState) => state.auth);
 
   const [playlists, setPlaylists] = useState<UserPlaylistData[]>([]);
@@ -26,7 +26,7 @@ const MyPlaylists: React.FC = () => {
 
   useEffect(() => {
     if (user && Object.keys(userInfo || {}).length === 0) {
-      dispatch(getUserInfo() as any);
+      dispatch(getUserInfo());
     }
   }, [user, userInfo, dispatch]);
 

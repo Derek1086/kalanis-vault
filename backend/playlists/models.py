@@ -141,3 +141,21 @@ class UserFollow(models.Model):
     
     def __str__(self):
         return f"{self.follower.username} follows {self.followed.username}"
+    
+
+class PlaylistView(models.Model):
+    """
+    Model to track user's playlist view history.
+    """
+    user = models.ForeignKey(User, related_name="playlist_views", on_delete=models.CASCADE)
+    playlist = models.ForeignKey(Playlist, related_name="user_views", on_delete=models.CASCADE)
+    viewed_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        verbose_name = _("Playlist View")
+        verbose_name_plural = _("Playlist Views")
+        ordering = ['-viewed_at']
+        unique_together = ['user', 'playlist']
+    
+    def __str__(self):
+        return f"{self.user.username} viewed {self.playlist.title}"

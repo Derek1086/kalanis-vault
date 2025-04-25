@@ -1,7 +1,7 @@
 import axios from "axios";
 import React, { useState, useEffect } from "react";
 import { useSelector, useDispatch } from "react-redux";
-import { RootState } from "../app/store";
+import { RootState, AppDispatch } from "../app/store";
 import { getUserInfo } from "../features/auth/authSlice";
 import { Link } from "react-router-dom";
 import { UserPlaylistData, BACKEND_DOMAIN } from "../types/playlists.ts";
@@ -14,7 +14,6 @@ import { PrimaryButton } from "../components/Button";
 
 import { AiOutlineLoading3Quarters } from "react-icons/ai";
 import { IoWarningOutline } from "react-icons/io5";
-import { IoMdAdd } from "react-icons/io";
 
 /**
  * LikedPlaylists Component
@@ -25,7 +24,7 @@ import { IoMdAdd } from "react-icons/io";
  * @returns {JSX.Element} The rendered LikedPlaylists component
  */
 const LikedPlaylists: React.FC = () => {
-  const dispatch = useDispatch();
+  const dispatch = useDispatch<AppDispatch>();
   const { user, userInfo } = useSelector((state: RootState) => state.auth);
 
   const [playlists, setPlaylists] = useState<UserPlaylistData[]>([]);
@@ -35,7 +34,7 @@ const LikedPlaylists: React.FC = () => {
 
   useEffect(() => {
     if (user && Object.keys(userInfo || {}).length === 0) {
-      dispatch(getUserInfo() as any);
+      dispatch(getUserInfo());
     }
   }, [user, userInfo, dispatch]);
 

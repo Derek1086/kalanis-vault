@@ -2,7 +2,7 @@ from rest_framework import viewsets, status, filters
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
-from .models import Playlist, Video, UserFollow, Tag
+from .models import Playlist, Video, UserFollow, Tag, PlaylistView
 from .serializers import (
     PlaylistSerializer, 
     PlaylistCreateSerializer,
@@ -12,6 +12,7 @@ from .serializers import (
 )
 from .permissions import IsOwnerOrReadOnly
 from django.db.models import Q, F
+from django.utils import timezone
 from users.models import User
 
 class TagViewSet(viewsets.ModelViewSet):
@@ -73,16 +74,71 @@ class PlaylistViewSet(viewsets.ModelViewSet):
     
     def retrieve(self, request, *args, **kwargs):
         """
-        Increment view count when a playlist is viewed.
+        Increment view count when a playlist is viewed and record in user's history.
         """
         instance = self.get_object()
-        # Only count views from users other than the owner
-        if request.user != instance.user:
-            instance.view_count = F('view_count') + 1
-            instance.save(update_fields=['view_count'])
-            instance.refresh_from_db()
+        
+        if request.user.is_authenticated:
+            PlaylistView.objects.update_or_create(
+                user=request.user,
+                playlist=instance,
+                defaults={'viewed_at': timezone.now()}
+            )
+            
+            if request.user != instance.user:
+                instance.view_count = F('view_count') + 1
+                instance.save(update_fields=['view_count'])
+                instance.refresh_from_db()
         
         serializer = self.get_serializer(instance)
+        return Response(serializer.data)
+
+    @action(detail=False, methods=['get'])
+    def recent_playlists(self, request):
+        """
+        Return recently viewed playlists for the current user.
+        """
+        if not request.user.is_authenticated:
+            return Response(
+                {'detail': 'Authentication required.'},
+                status=status.HTTP_401_UNAUTHORIZED
+            )
+        
+        # Get distinct playlists from user's view history, ordered by most recent view
+        recent_views = PlaylistView.objects.filter(
+            user=request.user
+        ).order_by('-viewed_at')[:10]
+        
+        playlists = [view.playlist for view in recent_views]
+        serializer = self.get_serializer(playlists, many=True)
+        return Response(serializer.data)
+    
+    @action(detail=False, methods=['get'])
+    def search(self, request):
+        """
+        Search playlists by query parameter.
+        Searches across title, description, tags and username.
+        """
+        query = request.query_params.get('q', '')
+        if not query:
+            return Response(
+                {'detail': 'Search query is required.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        user = request.user
+        queryset = Playlist.objects.filter(
+            Q(is_public=True) | Q(user=user)
+        ).prefetch_related('videos', 'likes', 'tags')
+        
+        queryset = queryset.filter(
+            Q(title__icontains=query) |
+            Q(description__icontains=query) |
+            Q(tags__name__icontains=query) |
+            Q(user__username__icontains=query)
+        ).distinct()
+        
+        serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
     
     @action(detail=True, methods=['post'])
@@ -130,6 +186,18 @@ class PlaylistViewSet(viewsets.ModelViewSet):
         Return playlists the current user has liked.
         """
         queryset = request.user.liked_playlists.all()
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data)
+    
+    @action(detail=False, methods=['get'])
+    def popular(self, request):
+        """
+        Return the most viewed public playlists.
+        """
+        queryset = Playlist.objects.filter(
+            is_public=True
+        ).order_by('-view_count')[:10]
+        
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
     

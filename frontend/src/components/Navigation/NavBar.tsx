@@ -61,10 +61,7 @@ const NavBar = ({ onCreatePlaylist }: NavBarProps) => {
    * Navigates to search page when Enter key is pressed
    */
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    console.log(e.key);
     if (e.key === "Enter" && searchQuery.trim()) {
-      console.log("Search query:", searchQuery.trim());
-      // Navigate to search page with the query parameter
       navigate(`/search/${encodeURIComponent(searchQuery.trim())}`);
     }
   };

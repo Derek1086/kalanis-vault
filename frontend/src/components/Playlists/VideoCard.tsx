@@ -74,7 +74,6 @@ const VideoCard: React.FC<VideoCardProps> = ({ video, isOwner, onRemove }) => {
           theme: "dark",
         });
 
-        // Call the callback function
         onRemove(video.id);
       } catch (err) {
         console.error("Error removing video:", err);

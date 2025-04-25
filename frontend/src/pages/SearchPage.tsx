@@ -6,8 +6,6 @@ import { IoWarningOutline } from "react-icons/io5";
 import NavBar from "../components/Navigation/NavBar.tsx";
 import { Header, SecondaryText } from "../components/Typography";
 import PlaylistCard from "../components/Playlists/PlaylistCard.tsx";
-import { Link } from "react-router-dom";
-import { PrimaryButton } from "../components/Button";
 import { UserPlaylistData, BACKEND_DOMAIN } from "../types/playlists.ts";
 
 const SearchPage = () => {
@@ -40,7 +38,6 @@ const SearchPage = () => {
         { headers }
       );
 
-      // Sort results by relevance: title matches first, then tag matches, then description matches
       const sortedPlaylists = sortPlaylistsByRelevance(
         response.data,
         searchQuery
@@ -72,12 +69,18 @@ const SearchPage = () => {
     const scoredPlaylists = playlists.map((playlist) => {
       let score = 0;
 
-      // Title matches: +3
+      if (
+        playlist.user &&
+        playlist.user.username &&
+        playlist.user.username.toLowerCase().includes(lowerQuery)
+      ) {
+        score += 4;
+      }
+
       if (playlist.title.toLowerCase().includes(lowerQuery)) {
         score += 3;
       }
 
-      // Tag matches: +2
       if (
         playlist.tags &&
         playlist.tags.some((tag) => tag.name.toLowerCase().includes(lowerQuery))
@@ -85,21 +88,11 @@ const SearchPage = () => {
         score += 2;
       }
 
-      // Description matches: +1
       if (
         playlist.description &&
         playlist.description.toLowerCase().includes(lowerQuery)
       ) {
         score += 1;
-      }
-
-      // Username matches: +4
-      if (
-        playlist.user &&
-        playlist.user.username &&
-        playlist.user.username.toLowerCase().includes(lowerQuery)
-      ) {
-        score += 4;
       }
 
       return { ...playlist, relevanceScore: score };
@@ -114,7 +107,11 @@ const SearchPage = () => {
     <>
       <NavBar />
       <div className="container mx-auto p-6">
-        <Header text={`${playlists.length} results for "${query}"`} />
+        <Header
+          text={`${playlists.length} result${
+            playlists.length !== 1 ? "s" : ""
+          } for "${query}"`}
+        />
 
         {error && (
           <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4 flex items-center">
@@ -128,18 +125,12 @@ const SearchPage = () => {
             <AiOutlineLoading3Quarters className="animate-spin h-8 w-8 text-gray-400" />
           </div>
         ) : playlists.length === 0 ? (
-          <div className="text-center py-16 bg-gray-50 rounded-lg">
-            <div className="text-4xl mb-4">🔍</div>
+          <div className="text-center">
             <Header text="No Results Found" />
             <SecondaryText
               text={`We couldn't find any playlists matching "${query}"`}
               className="text-gray-400 mt-2"
             />
-            <Link to="/explore">
-              <PrimaryButton className="mt-6 mx-auto">
-                Explore Playlists
-              </PrimaryButton>
-            </Link>
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 mt-6">
