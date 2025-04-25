@@ -1,139 +1,101 @@
-import axios from "axios";
 import React, { useState } from "react";
-import { useSelector } from "react-redux";
-import { toast } from "react-toastify";
-import { RootState } from "../../app/store";
+import { NavLink } from "react-router-dom";
 import { VideoData, BACKEND_DOMAIN } from "../../types/playlists";
 
 import { Card } from "../Container";
-import { Header, Subtitle } from "../Typography";
-import { PrimaryButton, SecondaryButton } from "../Button";
-import { SecondaryText } from "../Typography";
+import { Header } from "../Typography";
+import VideoPlayer from "./VideoPlayer";
 
+import { MdDelete } from "react-icons/md";
+
+/**
+ * Props interface for the VideoCard component
+ *
+ * @interface VideoCardProps
+ * @property {VideoData} video - The video data object to display
+ * @property {boolean | null} isOwner - Flag indicating if the current user owns this video
+ * @property {function} [onRemove] - Optional callback function when a video is removed, takes video ID as parameter
+ */
 interface VideoCardProps {
   video: VideoData;
   isOwner: boolean | null;
   onRemove?: (videoId: number) => void;
 }
 
+/**
+ * Component for displaying a video in a card format with thumbnail and action buttons
+ *
+ * @component
+ * @param {VideoCardProps} props - The component props
+ * @param {VideoData} props.video - Video data to display
+ * @param {boolean | null} props.isOwner - Whether the current user owns this video
+ * @param {function} [props.onRemove] - Optional callback when video is removed
+ * @returns {JSX.Element} The rendered VideoCard component
+ */
 const VideoCard: React.FC<VideoCardProps> = ({ video, isOwner, onRemove }) => {
-  const { user } = useSelector((state: RootState) => state.auth);
-  const [isPlaying, setIsPlaying] = useState<boolean>(false);
-  const [isRemoving, setIsRemoving] = useState<boolean>(false);
+  const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
 
+  /**
+   * Determines the URL for the video thumbnail based on available sources
+   *
+   * @returns {string} The URL for the video thumbnail
+   */
   const getThumbnailUrl = (): string => {
     if (video.custom_thumbnail) {
       return `${BACKEND_DOMAIN}${video.custom_thumbnail}`;
     } else if (video.thumbnail_url) {
-      console.log(video.thumbnail_url);
       return video.thumbnail_url;
     }
     return "";
   };
 
-  const getAuthToken = (): string | null => {
-    if (user?.access) {
-      return user.access;
-    }
+  /**
+   * Handles the removal of a video after confirmation
+   *
+   * @param {React.MouseEvent} e - The click event
+   * @returns {Promise<void>}
+   */
+  const handleRemoveVideo = async (e: React.MouseEvent): Promise<void> => {
+    e.stopPropagation();
 
-    try {
-      const storedUser = localStorage.getItem("user");
-      if (storedUser) {
-        const parsedUser = JSON.parse(storedUser);
-        return parsedUser.access || null;
-      }
-    } catch (e) {
-      console.error("Error parsing user from localStorage:", e);
-    }
-
-    return null;
-  };
-
-  const handleRemoveVideo = async (): Promise<void> => {
     if (!isOwner || !onRemove) return;
 
     if (window.confirm(`Are you sure you want to remove this video?`)) {
-      setIsRemoving(true);
-
-      try {
-        const token = getAuthToken();
-        if (!token) {
-          toast.error("You need to be logged in to remove videos", {
-            theme: "dark",
-          });
-          return;
-        }
-
-        await axios.delete(`${BACKEND_DOMAIN}/api/v1/videos/${video.id}/`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-
-        toast.success("Video removed successfully", {
-          theme: "dark",
-        });
-
-        onRemove(video.id);
-      } catch (err) {
-        console.error("Error removing video:", err);
-        toast.error("Failed to remove video", {
-          theme: "dark",
-        });
-      } finally {
-        setIsRemoving(false);
-      }
+      onRemove(video.id);
     }
   };
 
-  const handlePlayVideo = (): void => {
-    setIsPlaying(true);
+  /**
+   * Opens the video modal when card is clicked
+   */
+  const handleCardClick = (): void => {
+    setIsModalOpen(true);
   };
 
-  const renderTikTokEmbed = () => {
-    const tiktokId =
-      video.tiktok_id ||
-      video.tiktok_url?.split("/").pop()?.split("?")[0] ||
-      "";
+  /**
+   * Closes the video modal
+   */
+  const handleCloseModal = (): void => {
+    setIsModalOpen(false);
+  };
 
-    return (
-      <div className="tiktok-embed-wrapper">
-        <blockquote
-          className="tiktok-embed"
-          cite={video.tiktok_url}
-          data-video-id={tiktokId}
-          style={{ maxWidth: "100%" }}
-        >
-          <section>
-            {video.title && <p>{video.title}</p>}
-            <a
-              target="_blank"
-              rel="noopener noreferrer"
-              href={
-                video.tiktok_url || `https://www.tiktok.com/video/${tiktokId}`
-              }
-            >
-              {video.title || "Watch on TikTok"}
-            </a>
-          </section>
-        </blockquote>
-
-        <script async src="https://www.tiktok.com/embed.js"></script>
-      </div>
-    );
+  /**
+   * Prevents card click event from triggering when link is clicked
+   *
+   * @param {React.MouseEvent} e - The click event
+   */
+  const handleLinkClick = (e: React.MouseEvent): void => {
+    e.stopPropagation();
   };
 
   return (
-    <Card
-      className="overflow-hidden cursor-pointer transition-transform hover:scale-[1.02] hover:shadow-md text-left"
-      onClick={handlePlayVideo}
-    >
-      <div className="w-full">
-        {!isPlaying ? (
-          <div
-            className="h-60 mb-3 rounded flex items-center justify-center cursor-pointer relative group"
-            onClick={handlePlayVideo}
-          >
+    <>
+      <Card
+        className="overflow-hidden cursor-pointer transition-transform hover:scale-[1.02] hover:shadow-md text-left"
+        onClick={handleCardClick}
+      >
+        <div className="w-full">
+          <div className="h-60 mb-3 rounded flex items-center justify-center cursor-pointer relative group">
             {getThumbnailUrl() ? (
               <img
                 src={getThumbnailUrl()}
@@ -144,61 +106,40 @@ const VideoCard: React.FC<VideoCardProps> = ({ video, isOwner, onRemove }) => {
               <div className="text-gray-400 text-4xl">🎞️</div>
             )}
           </div>
-        ) : (
-          <div className="mb-3">{renderTikTokEmbed()}</div>
-        )}
-      </div>
-      <div className="p-2 w-full">
-        <Header
-          text={video.title || "Untitled"}
-          className="font-semibold text-lg truncate w-full text-left"
-        />
-        <Subtitle
-          text={`TikTok ID: ${video.tiktok_id}`}
-          className="text-sm w-full text-left"
-        />
-      </div>
-      {isOwner && (
-        <PrimaryButton
-          onClick={handleRemoveVideo}
-          className="text-sm w-full mt-3 bg-red-600 hover:bg-red-700"
-          disabled={isRemoving}
-        >
-          {isRemoving ? "Removing..." : "Remove Video"}
-        </PrimaryButton>
-      )}
-    </Card>
-    //   <div className="flex justify-between items-center mt-4">
-    //     <a
-    //       href={video.tiktok_url}
-    //       target="_blank"
-    //       rel="noopener noreferrer"
-    //       className="text-indigo-600 hover:text-indigo-800 text-sm"
-    //     >
-    //       View on TikTok
-    //     </a>
+        </div>
+        <div className="p-2 w-full">
+          <Header
+            text={video.title || "Untitled"}
+            className="font-semibold text-lg truncate w-full text-left"
+          />
+          <div className="flex justify-between items-center mt-2">
+            <NavLink
+              className="text-[#c549d4] hover:text-[#b23abc] font-medium"
+              to={video.tiktok_url}
+              onClick={handleLinkClick}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              View on TikTok
+            </NavLink>
+            {isOwner && (
+              <button
+                onClick={handleRemoveVideo}
+                className="p-2 rounded-md text-white bg-[#c549d4] hover:bg-white hover:text-[#c549d4] cursor-pointer transition"
+              >
+                <MdDelete />
+              </button>
+            )}
+          </div>
+        </div>
+      </Card>
 
-    //     <div className="flex space-x-2">
-    //       {isPlaying && (
-    //         <SecondaryButton
-    //           onClick={() => setIsPlaying(false)}
-    //           className="text-sm px-3 py-1"
-    //         >
-    //           Hide Player
-    //         </SecondaryButton>
-    //       )}
-
-    //       {!isPlaying && (
-    //         <PrimaryButton
-    //           onClick={handlePlayVideo}
-    //           className="text-sm px-3 py-1"
-    //         >
-    //           Play Video
-    //         </PrimaryButton>
-    //       )}
-    //     </div>
-    //   </div>
-    // </Card>
+      <VideoPlayer
+        isOpen={isModalOpen}
+        onClose={handleCloseModal}
+        video={video}
+      />
+    </>
   );
 };
 

@@ -15,6 +15,19 @@ import { IoWarningOutline } from "react-icons/io5";
 import { FaCamera } from "react-icons/fa";
 import { CiUser, CiAt } from "react-icons/ci";
 
+/**
+ * Props for the EditProfile component
+ * @interface EditProfileProps
+ * @property {boolean} isOpen - Whether the modal is currently open
+ * @property {() => void} onClose - Function to call when the modal should close
+ * @property {() => void} onProfileUpdated - Function to call when the profile has been successfully updated
+ * @property {Object} currentProfile - The current user profile data
+ * @property {string} currentProfile.firstName - User's first name
+ * @property {string} currentProfile.lastName - User's last name
+ * @property {string} currentProfile.username - User's username
+ * @property {string} currentProfile.email - User's email address
+ * @property {string} currentProfile.profileImage - URL to user's profile image
+ */
 interface EditProfileProps {
   isOpen: boolean;
   onClose: () => void;
@@ -28,6 +41,17 @@ interface EditProfileProps {
   };
 }
 
+/**
+ * Object representing validation error messages
+ * @interface ValidationErrors
+ * @property {string} [first_name] - Error message for first name field
+ * @property {string} [last_name] - Error message for last name field
+ * @property {string} [username] - Error message for username field
+ * @property {string} [email] - Error message for email field
+ * @property {string} [profile_picture] - Error message for profile picture field
+ * @property {string[]} [non_field_errors] - General errors not associated with a specific field
+ * @property {string | string[]} [key] - Additional error fields that may be returned from the API
+ */
 interface ValidationErrors {
   first_name?: string;
   last_name?: string;
@@ -38,6 +62,15 @@ interface ValidationErrors {
   [key: string]: string | string[] | undefined;
 }
 
+/**
+ * Component for editing user profile information
+ * Allows users to update their personal information including profile picture,
+ * first name, last name, username, and email address
+ *
+ * @component
+ * @param {EditProfileProps} props - Component props
+ * @returns {JSX.Element} Rendered component
+ */
 const EditProfile: React.FC<EditProfileProps> = ({
   isOpen,
   onClose,
@@ -65,6 +98,9 @@ const EditProfile: React.FC<EditProfileProps> = ({
     profileImageFile: null as File | null,
   });
 
+  /**
+   * Initializes form data when the modal is opened
+   */
   useEffect(() => {
     if (isOpen && currentProfile) {
       setProfile({
@@ -81,6 +117,10 @@ const EditProfile: React.FC<EditProfileProps> = ({
     }
   }, [isOpen, currentProfile]);
 
+  /**
+   * Handles text input changes and clears validation errors for the changed field
+   * @param {React.ChangeEvent<HTMLInputElement>} e - Input change event
+   */
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setProfile((prev) => ({
@@ -94,6 +134,12 @@ const EditProfile: React.FC<EditProfileProps> = ({
     }
   };
 
+  /**
+   * Handles profile picture file selection and validation
+   * Validates file type and size before updating the profile state
+   *
+   * @param {React.ChangeEvent<HTMLInputElement>} e - File input change event
+   */
   const handleProfilePictureChange = (
     e: React.ChangeEvent<HTMLInputElement>
   ) => {
@@ -123,7 +169,6 @@ const EditProfile: React.FC<EditProfileProps> = ({
         profileImageFile: file,
       }));
 
-      // Clear validation errors
       if (validationErrors.profile_picture) {
         setValidationErrors((prev) => ({
           ...prev,
@@ -133,12 +178,21 @@ const EditProfile: React.FC<EditProfileProps> = ({
     }
   };
 
+  /**
+   * Triggers a click on the hidden file input element
+   */
   const triggerFileInput = () => {
     if (fileInputRef.current) {
       fileInputRef.current.click();
     }
   };
 
+  /**
+   * Validates all form fields before submission
+   * Checks if required fields are filled and formats are valid
+   *
+   * @returns {boolean} True if all fields are valid, false otherwise
+   */
   const validate = (): boolean => {
     const errors: ValidationErrors = {};
 
@@ -166,6 +220,12 @@ const EditProfile: React.FC<EditProfileProps> = ({
     return Object.keys(errors).length === 0;
   };
 
+  /**
+   * Handles form submission
+   * Validates form data and sends an API request to update the user profile
+   *
+   * @param {React.FormEvent} e - Form submission event
+   */
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -196,16 +256,12 @@ const EditProfile: React.FC<EditProfileProps> = ({
         formData.append("profile_picture", profile.profileImageFile);
       }
 
-      const response = await axios.patch(
-        `${BACKEND_DOMAIN}/api/v1/auth/users/me/`,
-        formData,
-        {
-          headers: {
-            Authorization: `JWT ${token}`,
-            "Content-Type": "multipart/form-data",
-          },
-        }
-      );
+      await axios.patch(`${BACKEND_DOMAIN}/api/v1/auth/users/me/`, formData, {
+        headers: {
+          Authorization: `JWT ${token}`,
+          "Content-Type": "multipart/form-data",
+        },
+      });
 
       toast.success("Profile updated successfully", {
         theme: "dark",

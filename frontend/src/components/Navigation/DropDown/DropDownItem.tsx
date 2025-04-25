@@ -1,5 +1,14 @@
 import React from "react";
 
+/**
+ * Props for the DropDownItem component
+ * @interface DropDownItemProps
+ * @property {React.ReactNode} children - Content to display within the dropdown item
+ * @property {() => void} [onClick] - Function to execute when item is clicked
+ * @property {string} [className] - Additional CSS classes to apply to the item
+ * @property {boolean} [disabled] - Whether the item is disabled
+ * @property {React.ReactNode} [icon] - Optional icon to display before the item content
+ */
 interface DropDownItemProps {
   children: React.ReactNode;
   onClick?: () => void;
@@ -8,6 +17,15 @@ interface DropDownItemProps {
   icon?: React.ReactNode;
 }
 
+/**
+ * DropDownItem component
+ *
+ * An interactive item within a dropdown menu that can be clicked
+ * Supports optional icon display and disabled state
+ *
+ * @param {DropDownItemProps} props - Component props
+ * @returns {JSX.Element} - Rendered component
+ */
 export const DropDownItem: React.FC<DropDownItemProps> = ({
   children,
   onClick = () => {},

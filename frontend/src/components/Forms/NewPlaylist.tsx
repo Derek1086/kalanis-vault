@@ -7,7 +7,7 @@ import { toast } from "react-toastify";
 
 import { Modal } from "../Container";
 import { IconInputField, TextAreaField, CheckboxField } from "../Input";
-import { PrimaryButton, ActionButton } from "../Button";
+import { PrimaryButton } from "../Button";
 
 import { CiBoxList } from "react-icons/ci";
 import { AiOutlineLoading3Quarters } from "react-icons/ai";
@@ -22,12 +22,26 @@ import {
   BACKEND_DOMAIN,
 } from "../../types/playlists";
 
+/**
+ * Props for the NewPlaylist component
+ * @typedef {Object} NewPlaylistProps
+ * @property {boolean} isOpen - Whether the playlist creation modal is open
+ * @property {() => void} onClose - Function to call when the modal is closed
+ * @property {(playlist: UserPlaylistData) => void} [onPlaylistCreated] - Optional callback for when a playlist is successfully created
+ */
 interface NewPlaylistProps {
   isOpen: boolean;
   onClose: () => void;
   onPlaylistCreated?: (playlist: UserPlaylistData) => void;
 }
 
+/**
+ * Component for creating a new playlist
+ *
+ * @component
+ * @param {NewPlaylistProps} props - The component props
+ * @returns {JSX.Element} The rendered component
+ */
 const NewPlaylist: React.FC<NewPlaylistProps> = ({
   isOpen,
   onClose,
@@ -53,6 +67,9 @@ const NewPlaylist: React.FC<NewPlaylistProps> = ({
   const [thumbnail, setThumbnail] = useState<File | null>(null);
   const [thumbnailPreview, setThumbnailPreview] = useState<string | null>(null);
 
+  /**
+   * Reset form state when modal opens
+   */
   useEffect(() => {
     if (isOpen) {
       setPlaylistName("");
@@ -67,6 +84,11 @@ const NewPlaylist: React.FC<NewPlaylistProps> = ({
     }
   }, [isOpen]);
 
+  /**
+   * Handle playlist name input changes and clear validation errors
+   *
+   * @param {React.ChangeEvent<HTMLInputElement>} e - The change event
+   */
   const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setPlaylistName(e.target.value);
     if (validationErrors.title) {
@@ -74,6 +96,11 @@ const NewPlaylist: React.FC<NewPlaylistProps> = ({
     }
   };
 
+  /**
+   * Handle playlist description changes and clear validation errors
+   *
+   * @param {React.ChangeEvent<HTMLTextAreaElement>} e - The change event
+   */
   const handleDescriptionChange = (
     e: React.ChangeEvent<HTMLTextAreaElement>
   ) => {
@@ -83,6 +110,11 @@ const NewPlaylist: React.FC<NewPlaylistProps> = ({
     }
   };
 
+  /**
+   * Handle tag input changes and clear validation errors
+   *
+   * @param {React.ChangeEvent<HTMLInputElement>} e - The change event
+   */
   const handleTagInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     setNewTag(value);
@@ -92,6 +124,9 @@ const NewPlaylist: React.FC<NewPlaylistProps> = ({
     }
   };
 
+  /**
+   * Add a new tag to the tags array if it's valid
+   */
   const addTag = () => {
     const trimmedTag = newTag.trim().toLowerCase();
     if (trimmedTag && !tags.includes(trimmedTag) && tags.length < 10) {
@@ -100,6 +135,11 @@ const NewPlaylist: React.FC<NewPlaylistProps> = ({
     }
   };
 
+  /**
+   * Handle key press events in the tag input field
+   *
+   * @param {React.KeyboardEvent} e - The keyboard event
+   */
   const handleTagKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter") {
       e.preventDefault();
@@ -107,10 +147,20 @@ const NewPlaylist: React.FC<NewPlaylistProps> = ({
     }
   };
 
+  /**
+   * Remove a tag from the tags array
+   *
+   * @param {string} tagToRemove - The tag to remove
+   */
   const removeTag = (tagToRemove: string) => {
     setTags(tags.filter((tag) => tag !== tagToRemove));
   };
 
+  /**
+   * Handle thumbnail image file selection and validation
+   *
+   * @param {React.ChangeEvent<HTMLInputElement>} e - The change event
+   */
   const handleThumbnailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (files && files.length > 0) {
@@ -141,12 +191,18 @@ const NewPlaylist: React.FC<NewPlaylistProps> = ({
     }
   };
 
+  /**
+   * Trigger the hidden file input click event
+   */
   const triggerFileInput = () => {
     if (fileInputRef.current) {
       fileInputRef.current.click();
     }
   };
 
+  /**
+   * Remove the current thumbnail and reset the file input
+   */
   const removeThumbnail = () => {
     setThumbnail(null);
     setThumbnailPreview(null);
@@ -155,6 +211,11 @@ const NewPlaylist: React.FC<NewPlaylistProps> = ({
     }
   };
 
+  /**
+   * Validate form fields before submission
+   *
+   * @returns {boolean} True if validation passes, false otherwise
+   */
   const validate = (): boolean => {
     const errors: ValidationErrors = {};
 
@@ -180,6 +241,11 @@ const NewPlaylist: React.FC<NewPlaylistProps> = ({
     return Object.keys(errors).length === 0;
   };
 
+  /**
+   * Handle form submission to create a new playlist
+   *
+   * @param {React.FormEvent} e - The form submission event
+   */
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 

@@ -13,6 +13,16 @@ import { PrimaryButton } from "../components/Button";
 import { CiLock } from "react-icons/ci";
 import { AiOutlineLoading3Quarters } from "react-icons/ai";
 
+/**
+ * ResetPasswordPageConfirm Component
+ *
+ * @description A page component that allows users to set a new password after following the reset link.
+ * Handles form submission with password validation, displays success/error messages,
+ * and redirects users after successful password reset.
+ *
+ * @component
+ * @returns {JSX.Element} Rendered form for setting a new password
+ */
 const ResetPasswordPageConfirm = () => {
   const { uid, token } = useParams();
   const [formData, setFormData] = useState({
@@ -29,6 +39,11 @@ const ResetPasswordPageConfirm = () => {
     (state: RootState) => state.auth
   );
 
+  /**
+   * Handles form input changes
+   *
+   * @param {React.ChangeEvent<HTMLInputElement>} e - Input change event
+   */
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData((prev) => ({
       ...prev,
@@ -37,10 +52,14 @@ const ResetPasswordPageConfirm = () => {
     console.log(formData);
   };
 
+  /**
+   * Handles form submission, validates passwords match
+   *
+   * @param {React.FormEvent} e - Form submission event
+   */
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Check if passwords match
     if (new_password !== re_new_password) {
       toast.error("Passwords do not match", { theme: "dark" });
       return;
@@ -56,6 +75,10 @@ const ResetPasswordPageConfirm = () => {
     dispatch(resetPasswordConfirm(userData));
   };
 
+  /**
+   * Effect hook to handle auth state changes
+   * Displays notifications and redirects on success
+   */
   useEffect(() => {
     if (isError) {
       toast.error(message, { theme: "dark" });

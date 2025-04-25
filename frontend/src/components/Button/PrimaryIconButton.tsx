@@ -1,9 +1,15 @@
-/**
- * Primary button with an icon component.
- * Extends the primary button with an icon displayed alongside text.
- */
 import React from "react";
 
+/**
+ * Props for the PrimaryIconButton component
+ * @interface PrimaryIconButtonProps
+ * @property {"button" | "submit" | "reset"} type - The button type attribute
+ * @property {string} [className] - Additional CSS classes to apply to the button
+ * @property {boolean} [disabled] - Whether the button is disabled
+ * @property {React.ReactNode} children - The content to render inside the button
+ * @property {React.ReactNode} icon - The icon to display in the button
+ * @property {(e: React.MouseEvent<HTMLButtonElement>) => void} [onClick] - Function to execute when button is clicked
+ */
 interface PrimaryIconButtonProps {
   type: "button" | "submit" | "reset";
   className?: string;
@@ -13,6 +19,14 @@ interface PrimaryIconButtonProps {
   onClick?: (e: React.MouseEvent<HTMLButtonElement>) => void;
 }
 
+/**
+ * PrimaryIconButton component
+ *
+ * A primary styled button with purple background that includes an icon and text
+ *
+ * @param {PrimaryIconButtonProps} props - Component props
+ * @returns {JSX.Element} - Rendered component
+ */
 export const PrimaryIconButton: React.FC<PrimaryIconButtonProps> = ({
   type,
   className = "",

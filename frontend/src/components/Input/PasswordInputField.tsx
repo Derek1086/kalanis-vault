@@ -1,10 +1,16 @@
-/**
- * Password input field with show/hide toggle functionality.
- * Includes an icon on the left and a toggle button on the right.
- */
 import React, { useState } from "react";
 import { FaEye, FaEyeSlash } from "react-icons/fa";
 
+/**
+ * Props for the PasswordInputField component
+ * @interface PasswordInputFieldProps
+ * @property {string} [placeholder="Password"] - Placeholder text for the input
+ * @property {string} name - The name attribute for the input
+ * @property {React.ChangeEventHandler<HTMLInputElement>} onChange - Function to execute when input value changes
+ * @property {string} value - The current value of the input
+ * @property {boolean} [required=false] - Whether the input is required
+ * @property {React.ReactNode} icon - The icon to display on the left side of the input
+ */
 interface PasswordInputFieldProps {
   placeholder?: string;
   name: string;
@@ -14,6 +20,14 @@ interface PasswordInputFieldProps {
   icon: React.ReactNode;
 }
 
+/**
+ * PasswordInputField component
+ *
+ * A password input field with an icon and toggle visibility button
+ *
+ * @param {PasswordInputFieldProps} props - Component props
+ * @returns {JSX.Element} - Rendered component
+ */
 export const PasswordInputField: React.FC<PasswordInputFieldProps> = ({
   placeholder = "Password",
   name,
@@ -36,7 +50,7 @@ export const PasswordInputField: React.FC<PasswordInputFieldProps> = ({
         onChange={onChange}
         value={value}
         required={required}
-        className="pl-10 pr-10 py-2 w-full border-2 border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#c549d4] focus:border-[#c549d4]"
+        className="pl-10 pr-10 py-2 w-full border-2 border-gray-300 rounded-md caret-[#c549d4] focus:outline-none focus:ring-2 focus:ring-[#c549d4] focus:border-[#c549d4]"
       />
       <div className="absolute inset-y-0 right-0 pr-3 flex items-center">
         <button

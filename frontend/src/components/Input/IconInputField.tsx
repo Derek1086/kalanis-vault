@@ -1,9 +1,20 @@
-/**
- * Input field with an icon displayed to the left.
- * Provides visual context about the input's purpose.
- */
 import React from "react";
 
+/**
+ * Props for the IconInputField component
+ * @interface IconInputFieldProps
+ * @property {string} type - The input type attribute
+ * @property {string} placeholder - Placeholder text for the input
+ * @property {string} name - The name attribute for the input
+ * @property {React.ChangeEventHandler<HTMLInputElement>} onChange - Function to execute when input value changes
+ * @property {string} value - The current value of the input
+ * @property {boolean} [required=false] - Whether the input is required
+ * @property {boolean} [autoFocus=false] - Whether the input should autofocus
+ * @property {React.ReactNode} icon - The icon to display in the input
+ * @property {string} [className] - Additional CSS classes to apply to the icon wrapper
+ * @property {React.KeyboardEventHandler<HTMLInputElement>} [onKeyDown] - Function to execute on key down events
+ * @property {boolean} [disabled=false] - Whether the input is disabled
+ */
 interface IconInputFieldProps {
   type: string;
   placeholder: string;
@@ -18,6 +29,14 @@ interface IconInputFieldProps {
   disabled?: boolean;
 }
 
+/**
+ * IconInputField component
+ *
+ * An input field with an icon displayed on the left side
+ *
+ * @param {IconInputFieldProps} props - Component props
+ * @returns {JSX.Element} - Rendered component
+ */
 export const IconInputField: React.FC<IconInputFieldProps> = ({
   type,
   placeholder,
@@ -48,7 +67,7 @@ export const IconInputField: React.FC<IconInputFieldProps> = ({
         autoFocus={autoFocus}
         onKeyDown={onKeyDown}
         disabled={disabled}
-        className="pl-10 pr-3 py-2 w-full border-2 border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#c549d4] focus:border-[#c549d4]"
+        className="pl-10 pr-3 py-2 w-full border-2 border-gray-300 rounded-md caret-[#c549d4] focus:outline-none focus:ring-2 focus:ring-[#c549d4] focus:border-[#c549d4]"
       />
     </div>
   );

@@ -1,25 +1,45 @@
+import axios from "axios";
 import { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
-import axios from "axios";
-import { AiOutlineLoading3Quarters } from "react-icons/ai";
-import { IoWarningOutline } from "react-icons/io5";
+import { UserPlaylistData, BACKEND_DOMAIN } from "../types/playlists.ts";
+
 import NavBar from "../components/Navigation/NavBar.tsx";
 import { Header, SecondaryText } from "../components/Typography";
 import PlaylistCard from "../components/Playlists/PlaylistCard.tsx";
-import { UserPlaylistData, BACKEND_DOMAIN } from "../types/playlists.ts";
 
+import { AiOutlineLoading3Quarters } from "react-icons/ai";
+import { IoWarningOutline } from "react-icons/io5";
+
+/**
+ * SearchPage Component
+ *
+ * @description A page component that displays search results for playlists based on a query parameter.
+ * Fetches data from the API, sorts results by relevance, and handles loading and error states.
+ *
+ * @component
+ * @returns {JSX.Element} Rendered search results page
+ */
 const SearchPage = () => {
   const { query } = useParams();
   const [playlists, setPlaylists] = useState<UserPlaylistData[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
+  /**
+   * Effect hook to fetch search results when query changes
+   */
   useEffect(() => {
     if (query) {
       fetchSearchResults(query);
     }
   }, [query]);
 
+  /**
+   * Fetches search results from the API
+   *
+   * @param {string} searchQuery - The search query to find playlists
+   * @returns {Promise<void>}
+   */
   const fetchSearchResults = async (searchQuery: string) => {
     setIsLoading(true);
     setError(null);
@@ -60,6 +80,13 @@ const SearchPage = () => {
     }
   };
 
+  /**
+   * Sorts playlists by relevance to the search query
+   *
+   * @param {UserPlaylistData[]} playlists - The playlists to sort
+   * @param {string} searchQuery - The search query to compare against
+   * @returns {UserPlaylistData[]} Sorted playlists by relevance score
+   */
   const sortPlaylistsByRelevance = (
     playlists: UserPlaylistData[],
     searchQuery: string

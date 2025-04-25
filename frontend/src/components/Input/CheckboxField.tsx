@@ -1,5 +1,13 @@
 import React from "react";
 
+/**
+ * Props for the CheckboxField component
+ * @interface CheckboxFieldProps
+ * @property {string} id - The id attribute for the checkbox input and label association
+ * @property {string} label - The text to display next to the checkbox
+ * @property {boolean} checked - Whether the checkbox is checked
+ * @property {(checked: boolean) => void} onChange - Function to execute when checkbox state changes
+ */
 interface CheckboxFieldProps {
   id: string;
   label: string;
@@ -7,6 +15,14 @@ interface CheckboxFieldProps {
   onChange: (checked: boolean) => void;
 }
 
+/**
+ * CheckboxField component
+ *
+ * A styled checkbox input with a label
+ *
+ * @param {CheckboxFieldProps} props - Component props
+ * @returns {JSX.Element} - Rendered component
+ */
 export const CheckboxField: React.FC<CheckboxFieldProps> = ({
   id,
   label,

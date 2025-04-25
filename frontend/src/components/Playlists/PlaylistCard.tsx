@@ -1,21 +1,27 @@
 import React from "react";
 import { Link } from "react-router-dom";
-import { Card } from "../Container";
-import { Header, Subtitle } from "../Typography";
 import { UserPlaylistData, BACKEND_DOMAIN } from "../../types/playlists.ts";
 
+import { Card } from "../Container";
+import { Header, Subtitle } from "../Typography";
+
+/**
+ * Props interface for the PlaylistCard component
+ *
+ * @interface PlaylistCardProps
+ * @property {UserPlaylistData} playlist - The playlist data object to be displayed
+ */
 interface PlaylistCardProps {
   playlist: UserPlaylistData;
 }
 
 /**
- * PlaylistCard component renders a clickable card linking to a playlist's detail page.
- * It displays the cover image (or a fallback icon), playlist title, owner username,
- * and video count.
+ * Component for displaying a playlist in a card format with cover image and details
  *
  * @component
- * @param {UserPlaylistData} props.playlist - The playlist object containing title, user info, image, and video count
- * @returns {JSX.Element} A styled card with playlist information and navigation
+ * @param {PlaylistCardProps} props - The component props
+ * @param {UserPlaylistData} props.playlist - Playlist data to display
+ * @returns {JSX.Element} The rendered PlaylistCard component
  */
 const PlaylistCard: React.FC<PlaylistCardProps> = ({ playlist }) => {
   return (

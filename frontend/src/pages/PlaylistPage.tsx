@@ -12,13 +12,8 @@ import EmbedVideo from "../components/Forms/EmbedVideo.tsx";
 import VideoCard from "../components/Playlists/VideoCard.tsx";
 import EditPlaylist from "../components/Forms/EditPlaylist.tsx";
 import TagCard from "../components/Playlists/TagCard.tsx";
-import { Card } from "../components/Container";
 import { Header, SecondaryText } from "../components/Typography";
-import {
-  PrimaryButton,
-  SecondaryButton,
-  ActionButton,
-} from "../components/Button";
+import { PrimaryButton, ActionButton } from "../components/Button";
 
 import { AiOutlineLoading3Quarters } from "react-icons/ai";
 import { IoWarningOutline } from "react-icons/io5";
@@ -46,10 +41,6 @@ const PlaylistPage: React.FC = () => {
   const [playlist, setPlaylist] = useState<UserPlaylistData | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
-  const [isAddingVideo, setIsAddingVideo] = useState<boolean>(false);
-  const [newVideoUrl, setNewVideoUrl] = useState<string>("");
-  const [newVideoTitle, setNewVideoTitle] = useState<string>("");
-  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState<boolean>(false);
   const [isDeleting, setIsDeleting] = useState<boolean>(false);
 
@@ -133,81 +124,6 @@ const PlaylistPage: React.FC = () => {
       } else {
         setError("Network error. Please check your connection");
       }
-    }
-  };
-
-  /**
-   * Handles the addition of a new TikTok video to the current playlist.
-   * Validates URL, retrieves token, makes POST request, and updates state.
-   *
-   * @async
-   * @returns {Promise<void>} A promise that resolves after attempting to add a video.
-   */
-  const handleAddVideo = async (): Promise<void> => {
-    if (!newVideoUrl.trim()) {
-      return;
-    }
-
-    setIsSubmitting(true);
-
-    try {
-      const tiktokId = newVideoUrl.split("/").pop()?.split("?")[0] || "";
-
-      const token = getAuthToken();
-      if (!token) {
-        toast.error("You need to be logged in to add videos", {
-          theme: "dark",
-        });
-        navigate("/login");
-        return;
-      }
-
-      const response = await axios.post(
-        `${BACKEND_DOMAIN}/api/v1/videos/`,
-        {
-          tiktok_url: newVideoUrl,
-          tiktok_id: tiktokId,
-          title: newVideoTitle || null,
-          playlist: playlistId,
-        },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-
-      setPlaylist((prev) => {
-        if (!prev) return prev;
-        return {
-          ...prev,
-          videos: [...prev.videos, response.data],
-          video_count: prev.video_count + 1,
-        };
-      });
-
-      setNewVideoUrl("");
-      setNewVideoTitle("");
-      setIsAddingVideo(false);
-    } catch (err) {
-      console.error("Error adding video:", err);
-
-      if (axios.isAxiosError(err) && err.response) {
-        if (err.response.status === 401) {
-          toast.error("Session expired. Please log in again", {
-            theme: "dark",
-          });
-          navigate("/login");
-        } else if (err.response.status === 403) {
-          setError("You don't have permission to add videos to this playlist");
-        } else {
-          setError("Failed to add video");
-        }
-      } else {
-        setError("Network error while adding video");
-      }
-    } finally {
-      setIsSubmitting(false);
     }
   };
 
@@ -346,7 +262,7 @@ const PlaylistPage: React.FC = () => {
         };
       });
 
-      toast.success("Video removed successfully", {
+      toast.success("Video removed", {
         theme: "dark",
       });
     } catch (err) {
@@ -490,75 +406,10 @@ const PlaylistPage: React.FC = () => {
 
   return (
     <>
-      {/* Add Video Form */}
-      {isAddingVideo && (
-        <Card className="mb-8 p-6">
-          <Header text="Add Video" className="mb-4" />
-          <div className="space-y-4">
-            <div>
-              <label
-                htmlFor="videoUrl"
-                className="block text-sm font-medium text-gray-700 mb-1"
-              >
-                TikTok URL*
-              </label>
-              <input
-                id="videoUrl"
-                type="text"
-                value={newVideoUrl}
-                onChange={(e) => setNewVideoUrl(e.target.value)}
-                placeholder="https://www.tiktok.com/@username/video/1234567890"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-                required
-              />
-            </div>
-
-            <div>
-              <label
-                htmlFor="videoTitle"
-                className="block text-sm font-medium text-gray-700 mb-1"
-              >
-                Title (Optional)
-              </label>
-              <input
-                id="videoTitle"
-                type="text"
-                value={newVideoTitle}
-                onChange={(e) => setNewVideoTitle(e.target.value)}
-                placeholder="Enter a title for this video"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-              />
-            </div>
-
-            <div className="flex gap-3">
-              <PrimaryButton
-                onClick={handleAddVideo}
-                disabled={!newVideoUrl.trim() || isSubmitting}
-                className="px-4 py-2"
-              >
-                {isSubmitting ? (
-                  <AiOutlineLoading3Quarters className="animate-spin h-5 w-5" />
-                ) : (
-                  "Add Video"
-                )}
-              </PrimaryButton>
-
-              <SecondaryButton
-                onClick={() => setIsAddingVideo(false)}
-                className="px-4 py-2"
-              >
-                Cancel
-              </SecondaryButton>
-            </div>
-          </div>
-        </Card>
-      )}
-
       <NavBar />
       <div className="container mx-auto p-6">
         {isOwner && (
           <>
-            {/* Use EditPlaylist instead of NewPlaylist for editing */}
             <EditPlaylist
               isOpen={isEditModalOpen}
               onClose={() => setIsEditModalOpen(false)}

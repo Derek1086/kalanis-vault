@@ -6,19 +6,42 @@ import PlaylistCard from "../Playlists/PlaylistCard";
 import { AiOutlineLoading3Quarters } from "react-icons/ai";
 import { IoWarningOutline } from "react-icons/io5";
 
+/**
+ * Props for the UserPlaylists component
+ * @interface UserPlaylistsProps
+ * @property {string} username - The username of the user whose playlists should be displayed
+ */
 type UserPlaylistsProps = {
   username: string;
 };
 
+/**
+ * Component that fetches and displays a list of playlists for a specific user
+ *
+ * @component
+ * @param {object} props - Component props
+ * @param {string} props.username - The username of the user whose playlists should be displayed
+ * @returns {JSX.Element} A component displaying user playlists or appropriate loading/error states
+ */
 const UserPlaylists: React.FC<UserPlaylistsProps> = ({ username }) => {
   const [playlists, setPlaylists] = useState<UserPlaylistData[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
+  /**
+   * Effect hook to fetch user playlists when the username changes
+   */
   useEffect(() => {
     fetchUserPlaylists();
   }, [username]);
 
+  /**
+   * Fetches the user's playlists from the backend API
+   *
+   * @async
+   * @function fetchUserPlaylists
+   * @returns {Promise<void>}
+   */
   const fetchUserPlaylists = async (): Promise<void> => {
     setIsLoading(true);
     setError(null);

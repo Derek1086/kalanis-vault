@@ -15,6 +15,10 @@ import { AiOutlineLoading3Quarters } from "react-icons/ai";
 import { IoWarningOutline } from "react-icons/io5";
 import { IoMdAdd } from "react-icons/io";
 
+/**
+ * MyPlaylists component displays all playlists for the authenticated user
+ * @returns {JSX.Element} MyPlaylists component
+ */
 const MyPlaylists: React.FC = () => {
   const dispatch = useDispatch<AppDispatch>();
   const { user, userInfo } = useSelector((state: RootState) => state.auth);
@@ -24,12 +28,18 @@ const MyPlaylists: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
 
+  /**
+   * Fetch user info if logged in but info not yet loaded
+   */
   useEffect(() => {
     if (user && Object.keys(userInfo || {}).length === 0) {
       dispatch(getUserInfo());
     }
   }, [user, userInfo, dispatch]);
 
+  /**
+   * Fetch playlists when user authentication is available
+   */
   useEffect(() => {
     if (user) {
       fetchPlaylists();
@@ -38,6 +48,11 @@ const MyPlaylists: React.FC = () => {
     }
   }, [user]);
 
+  /**
+   * Fetches the user's playlists from the backend API
+   * @async
+   * @returns {Promise<void>}
+   */
   const fetchPlaylists = async (): Promise<void> => {
     setIsLoading(true);
     setError(null);
@@ -84,6 +99,12 @@ const MyPlaylists: React.FC = () => {
     }
   };
 
+  /**
+   * Handles adding a newly created playlist to the playlists state
+   * or updating an existing one
+   * @param {any} newPlaylist - The newly created or updated playlist
+   * @returns {void}
+   */
   const handlePlaylistCreated = (newPlaylist: any): void => {
     const existingIndex = playlists.findIndex((p) => p.id === newPlaylist.id);
 

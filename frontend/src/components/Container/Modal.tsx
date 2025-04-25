@@ -4,6 +4,17 @@ import { Header, SecondaryText } from "../Typography";
 import { IconButton } from "../Button";
 import { IoMdClose } from "react-icons/io";
 
+/**
+ * Props for the Modal component
+ * @interface ModalProps
+ * @property {boolean} isOpen - Controls whether the modal is displayed
+ * @property {() => void} onClose - Function to call when the modal should close
+ * @property {string} title - The title text to display in the modal header
+ * @property {string} [description] - Optional description text to display below the title
+ * @property {React.ReactNode} children - The content to render inside the modal
+ * @property {string} [maxWidth="max-w-md"] - Maximum width of the modal
+ * @property {string} [minWidth="min-w-md"] - Minimum width of the modal
+ */
 interface ModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -14,6 +25,15 @@ interface ModalProps {
   minWidth?: string;
 }
 
+/**
+ * Modal component
+ *
+ * A dialog box that appears on top of the main content with a semi-transparent overlay
+ * Closes when clicking outside the modal area
+ *
+ * @param {ModalProps} props - Component props
+ * @returns {JSX.Element|null} - Rendered component or null if not open
+ */
 export const Modal: React.FC<ModalProps> = ({
   isOpen,
   onClose,

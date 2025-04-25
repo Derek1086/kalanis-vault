@@ -8,10 +8,23 @@ import UserPlaylists from "../Playlists/UserPlaylists";
 
 import { AiOutlineLoading3Quarters } from "react-icons/ai";
 
+/**
+ * @typedef {Object} UserProfileProps
+ * @property {string} username - The username of the profile to display
+ */
 type UserProfileProps = {
   username: string;
 };
 
+/**
+ * @typedef {Object} UserData
+ * @property {number} id - The user's unique identifier
+ * @property {string} username - The user's username
+ * @property {string} first_name - The user's first name
+ * @property {string} last_name - The user's last name
+ * @property {string} email - The user's email address
+ * @property {string|null} profile_picture - URL to the user's profile picture or null if not set
+ */
 type UserData = {
   id: number;
   username: string;
@@ -21,6 +34,13 @@ type UserData = {
   profile_picture: string | null;
 };
 
+/**
+ * Component that displays a user profile with their information, stats, and playlists.
+ * Allows following/unfollowing the user if logged in.
+ *
+ * @param {UserProfileProps} props - Component props
+ * @returns {JSX.Element} - Rendered component
+ */
 const UserProfile = ({ username }: UserProfileProps) => {
   const { user } = useSelector((state: RootState) => state.auth);
 
@@ -34,12 +54,22 @@ const UserProfile = ({ username }: UserProfileProps) => {
 
   const defaultProfileImage = `${BACKEND_DOMAIN}/media/profile_pics/default.png`;
 
+  /**
+   * Effect hook to fetch user profile data when component mounts or username changes
+   */
   useEffect(() => {
     if (user && username) {
       fetchUserProfile();
     }
   }, [user, username]);
 
+  /**
+   * Fetches all profile data including personal info, playlists, followers, and likes
+   * Also determines if the current user is following this profile
+   *
+   * @async
+   * @returns {Promise<void>}
+   */
   const fetchUserProfile = async () => {
     setIsLoading(true);
     setError(null);
@@ -56,7 +86,6 @@ const UserProfile = ({ username }: UserProfileProps) => {
         return;
       }
 
-      // Get profile information for the user
       const profileResponse = await axios.get<UserData>(
         `${BACKEND_DOMAIN}/api/v1/users/profile/${username}/`,
         {
@@ -68,7 +97,6 @@ const UserProfile = ({ username }: UserProfileProps) => {
 
       setProfileData(profileResponse.data);
 
-      // Get playlists by user
       const playlistsResponse = await axios.get<PlaylistData[]>(
         `${BACKEND_DOMAIN}/api/v1/playlists/user/${profileResponse.data.id}/`,
         {
@@ -79,7 +107,6 @@ const UserProfile = ({ username }: UserProfileProps) => {
       );
       setPlaylistsCount(playlistsResponse.data.length);
 
-      // Get liked playlists by user
       const likedPlaylistsResponse = await axios.get<PlaylistData[]>(
         `${BACKEND_DOMAIN}/api/v1/playlists/liked_by/${profileResponse.data.id}/`,
         {
@@ -90,7 +117,6 @@ const UserProfile = ({ username }: UserProfileProps) => {
       );
       setLikesCount(likedPlaylistsResponse.data.length);
 
-      // Get followers
       const followersResponse = await axios.get(
         `${BACKEND_DOMAIN}/api/v1/follows/`,
         {
@@ -105,7 +131,6 @@ const UserProfile = ({ username }: UserProfileProps) => {
       );
       setFollowersCount(followers.length);
 
-      // Check if current user is following this profile
       const currentUserId = JSON.parse(
         localStorage.getItem("userInfo") || "{}"
       ).id;
@@ -124,6 +149,13 @@ const UserProfile = ({ username }: UserProfileProps) => {
     }
   };
 
+  /**
+   * Handles toggling the follow status for the current profile
+   * If already following, unfollows the user; otherwise follows the user
+   *
+   * @async
+   * @returns {Promise<void>}
+   */
   const handleFollowToggle = async () => {
     try {
       const token =
@@ -134,7 +166,6 @@ const UserProfile = ({ username }: UserProfileProps) => {
       if (!token || !profileData) return;
 
       if (isFollowing) {
-        // Unfollow user
         await axios.delete(
           `${BACKEND_DOMAIN}/api/v1/follows/${profileData.id}/`,
           {
@@ -144,7 +175,6 @@ const UserProfile = ({ username }: UserProfileProps) => {
           }
         );
       } else {
-        // Follow user
         await axios.post(
           `${BACKEND_DOMAIN}/api/v1/follows/`,
           { followed: profileData.id },
@@ -156,7 +186,6 @@ const UserProfile = ({ username }: UserProfileProps) => {
         );
       }
 
-      // Update follow status and counts
       fetchUserProfile();
     } catch (err) {
       console.error("Error updating follow status:", err);

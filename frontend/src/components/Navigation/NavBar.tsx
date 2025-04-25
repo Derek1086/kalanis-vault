@@ -13,6 +13,8 @@ import {
   CiHeart,
 } from "react-icons/ci";
 import { IoHomeOutline, IoSearch } from "react-icons/io5";
+import { IoMdClose } from "react-icons/io";
+import { FaHistory } from "react-icons/fa";
 
 import { SearchField } from "../Input";
 import { IconButton } from "../Button";
@@ -22,11 +24,13 @@ interface NavBarProps {
   onCreatePlaylist?: () => void;
 }
 
+const MAX_SEARCH_HISTORY = 5;
+
 /**
  * Navigation bar component that displays a search field and user controls.
  * Handles user authentication state and provides navigation functionality.
  * Features:
- * - Search functionality
+ * - Search functionality with search history autocomplete
  * - User dropdown menu with logout option
  * - Responsive design
  * - User profile picture display
@@ -34,36 +38,101 @@ interface NavBarProps {
 const NavBar = ({ onCreatePlaylist }: NavBarProps) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [showSearchHistory, setShowSearchHistory] = useState(false);
+  const [searchHistory, setSearchHistory] = useState<string[]>([]);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
+  const searchHistoryRef = useRef<HTMLDivElement>(null);
 
   const navigate = useNavigate();
   const dispatch = useDispatch<AppDispatch>();
 
   const { user, userInfo } = useSelector((state: RootState) => state.auth);
 
-  // Default profile image path
   const defaultProfileImage = `${BACKEND_DOMAIN}/media/profile_pics/default.png`;
 
-  // Get profile image URL
   const profileImageUrl = userInfo?.profile_picture
     ? `${BACKEND_DOMAIN}${userInfo.profile_picture}`
     : defaultProfileImage;
 
   /**
+   * Effect hook to load search history from localStorage on component mount
+   */
+  useEffect(() => {
+    const storedHistory = localStorage.getItem("searchHistory");
+    if (storedHistory) {
+      setSearchHistory(JSON.parse(storedHistory));
+    }
+  }, []);
+
+  /**
    * Updates the search query state when the search input changes
+   * @param {React.ChangeEvent<HTMLInputElement>} e - The change event from the search input
    */
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchQuery(e.target.value);
   };
 
   /**
+   * Adds a new search query to search history and stores in localStorage
+   * Limits history to MAX_SEARCH_HISTORY items and prevents duplicates
+   * @param {string} query - The search query to add to history
+   */
+  const addToSearchHistory = (query: string) => {
+    if (!query.trim() || query.length < 2) return;
+
+    const updatedHistory = [
+      query,
+      ...searchHistory.filter((item) => item !== query),
+    ].slice(0, MAX_SEARCH_HISTORY);
+
+    setSearchHistory(updatedHistory);
+    localStorage.setItem("searchHistory", JSON.stringify(updatedHistory));
+  };
+
+  /**
+   * Removes a search query from search history and updates localStorage
+   * @param {string} query - The search query to remove from history
+   * @param {React.MouseEvent} e - The click event
+   */
+  const removeFromSearchHistory = (query: string, e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevent triggering search when clicking the X button
+
+    const updatedHistory = searchHistory.filter((item) => item !== query);
+    setSearchHistory(updatedHistory);
+    localStorage.setItem("searchHistory", JSON.stringify(updatedHistory));
+  };
+
+  /**
    * Handles search on enter key press
    * Navigates to search page when Enter key is pressed
+   * @param {React.KeyboardEvent} e - The keyboard event
    */
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && searchQuery.trim()) {
+      addToSearchHistory(searchQuery.trim());
       navigate(`/search/${encodeURIComponent(searchQuery.trim())}`);
+      setShowSearchHistory(false);
     }
+  };
+
+  /**
+   * Handles selecting a search history item
+   * Updates search query, adds to history, and navigates to search page
+   * @param {string} query - The selected history item query
+   */
+  const handleSelectHistoryItem = (query: string) => {
+    setSearchQuery(query);
+    addToSearchHistory(query);
+    navigate(`/search/${encodeURIComponent(query)}`);
+    setShowSearchHistory(false);
+  };
+
+  /**
+   * Shows search history dropdown when search input is focused
+   */
+  const handleSearchFocus = () => {
+    setShowSearchHistory(true);
   };
 
   /**
@@ -92,13 +161,22 @@ const NavBar = ({ onCreatePlaylist }: NavBarProps) => {
       ) {
         setDropdownOpen(false);
       }
+
+      if (
+        searchHistoryRef.current &&
+        !searchHistoryRef.current.contains(event.target as Node) &&
+        searchInputRef.current &&
+        !searchInputRef.current.contains(event.target as Node)
+      ) {
+        setShowSearchHistory(false);
+      }
     };
 
     document.addEventListener("mousedown", handleClickOutside);
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
-  }, [dropdownRef]);
+  }, [dropdownRef, searchHistoryRef, searchInputRef]);
 
   return (
     <nav className="bg-[#151316] shadow-md px-6 py-4">
@@ -119,13 +197,51 @@ const NavBar = ({ onCreatePlaylist }: NavBarProps) => {
             value={searchQuery}
             icon={<IoSearch className="h-5 w-5 text-gray-400 cursor-pointer" />}
             className="pr-20"
-            onClear={() => setSearchQuery("")}
+            onClear={() => {
+              setSearchQuery("");
+              if (searchInputRef.current) {
+                searchInputRef.current.focus();
+              }
+            }}
             onKeyDown={handleKeyDown}
+            onFocus={handleSearchFocus}
+            ref={searchInputRef}
+            autoComplete="off"
           />
           <div className="absolute right-10 h-5 w-[1px] bg-gray-300" />
           <Link to="/" className="absolute right-2 flex items-center px-1">
             <IoHomeOutline className="h-5 w-5 text-gray-400 hover:text-gray-600 cursor-pointer" />
           </Link>
+
+          {/* Search History Autocomplete Dropdown */}
+          {showSearchHistory && searchHistory.length > 0 && (
+            <div
+              ref={searchHistoryRef}
+              className="absolute z-50 w-full bg-[#1e1c1f] top-12 rounded-md shadow-lg"
+            >
+              <ul className="max-h-64 overflow-y-auto">
+                {searchHistory.map((item, index) => (
+                  <li
+                    key={`${item}-${index}`}
+                    className="flex items-center justify-between px-4 py-2 hover:bg-[#2a282b] cursor-pointer text-white"
+                    onClick={() => handleSelectHistoryItem(item)}
+                  >
+                    <div className="flex items-center">
+                      <FaHistory className="h-4 w-4 text-gray-400 mr-2" />
+                      <span>{item}</span>
+                    </div>
+                    <button
+                      className="text-gray-400 hover:text-gray-200 cursor-pointer"
+                      onClick={(e) => removeFromSearchHistory(item, e)}
+                      aria-label={`Remove ${item} from search history`}
+                    >
+                      <IoMdClose className="h-4 w-4" />
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
         </div>
         {user ? (
           <div className="flex items-center space-x-4">

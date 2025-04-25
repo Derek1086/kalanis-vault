@@ -12,6 +12,16 @@ import { IconInputField } from "../components/Input";
 
 import { CiAt } from "react-icons/ci";
 
+/**
+ * ResetPasswordPage Component
+ *
+ * @description A page component that allows users to request a password reset by submitting their email.
+ * The component handles form submission, displays success/error messages via toast notifications,
+ * and redirects users after successful submission.
+ *
+ * @component
+ * @returns {JSX.Element} Rendered form for password reset request
+ */
 const ResetPasswordPage = () => {
   const [formData, setFormData] = useState({
     email: "",
@@ -26,6 +36,11 @@ const ResetPasswordPage = () => {
     (state: RootState) => state.auth
   );
 
+  /**
+   * Handles form input changes
+   *
+   * @param {React.ChangeEvent<HTMLInputElement>} e - Input change event
+   */
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData((prev) => ({
       ...prev,
@@ -33,6 +48,11 @@ const ResetPasswordPage = () => {
     }));
   };
 
+  /**
+   * Handles form submission
+   *
+   * @param {React.FormEvent} e - Form submission event
+   */
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -43,6 +63,11 @@ const ResetPasswordPage = () => {
     dispatch(resetPassword(userData));
   };
 
+  /**
+   * Handles form submission
+   *
+   * @param {React.FormEvent} e - Form submission event
+   */
   useEffect(() => {
     if (isError) {
       toast.error(message, { theme: "dark" });

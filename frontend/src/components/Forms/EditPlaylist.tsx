@@ -6,7 +6,7 @@ import { toast } from "react-toastify";
 
 import { Modal } from "../Container";
 import { IconInputField, TextAreaField, CheckboxField } from "../Input";
-import { PrimaryButton, ActionButton } from "../Button";
+import { PrimaryButton } from "../Button";
 
 import { CiBoxList } from "react-icons/ci";
 import { AiOutlineLoading3Quarters } from "react-icons/ai";
@@ -21,6 +21,14 @@ import {
   BACKEND_DOMAIN,
 } from "../../types/playlists";
 
+/**
+ * Props interface for the EditPlaylist component
+ * @interface EditPlaylistProps
+ * @property {boolean} isOpen - Controls whether the modal is visible
+ * @property {() => void} onClose - Callback function to close the modal
+ * @property {(playlist: UserPlaylistData) => void} onPlaylistUpdated - Callback function triggered when playlist is updated
+ * @property {UserPlaylistData} playlistData - Data of the playlist being edited
+ */
 interface EditPlaylistProps {
   isOpen: boolean;
   onClose: () => void;
@@ -28,6 +36,19 @@ interface EditPlaylistProps {
   playlistData: UserPlaylistData;
 }
 
+/**
+ * EditPlaylist component for modifying existing playlists
+ *
+ * This modal component allows users to update playlist properties including:
+ * - Title
+ * - Description
+ * - Visibility (public/private)
+ * - Tags
+ * - Thumbnail image
+ *
+ * @param {EditPlaylistProps} props - Component props
+ * @returns {JSX.Element} EditPlaylist modal component
+ */
 const EditPlaylist: React.FC<EditPlaylistProps> = ({
   isOpen,
   onClose,
@@ -55,6 +76,11 @@ const EditPlaylist: React.FC<EditPlaylistProps> = ({
     null
   );
 
+  /**
+   * Effect to initialize form state when the modal opens or playlist data changes
+   *
+   * Updates all form fields with data from the provided playlist
+   */
   useEffect(() => {
     if (isOpen && playlistData) {
       setPlaylistId(playlistData.id);
@@ -87,6 +113,11 @@ const EditPlaylist: React.FC<EditPlaylistProps> = ({
     }
   }, [isOpen, playlistData]);
 
+  /**
+   * Fetches tags for the specified playlist from the API
+   *
+   * @param {number} playlistId - ID of the playlist to fetch tags for
+   */
   const fetchPlaylistTags = async (playlistId: number) => {
     try {
       const token = user?.access || localStorage.getItem("accessToken");
@@ -115,6 +146,11 @@ const EditPlaylist: React.FC<EditPlaylistProps> = ({
     }
   };
 
+  /**
+   * Handles playlist name input changes and clears related validation errors
+   *
+   * @param {React.ChangeEvent<HTMLInputElement>} e - Input change event
+   */
   const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setPlaylistName(e.target.value);
     if (validationErrors.title) {
@@ -122,6 +158,11 @@ const EditPlaylist: React.FC<EditPlaylistProps> = ({
     }
   };
 
+  /**
+   * Handles playlist description input changes and clears related validation errors
+   *
+   * @param {React.ChangeEvent<HTMLTextAreaElement>} e - Textarea change event
+   */
   const handleDescriptionChange = (
     e: React.ChangeEvent<HTMLTextAreaElement>
   ) => {
@@ -131,6 +172,11 @@ const EditPlaylist: React.FC<EditPlaylistProps> = ({
     }
   };
 
+  /**
+   * Handles tag input field changes and clears related validation errors
+   *
+   * @param {React.ChangeEvent<HTMLInputElement>} e - Input change event
+   */
   const handleTagInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     setNewTag(value);
@@ -140,6 +186,14 @@ const EditPlaylist: React.FC<EditPlaylistProps> = ({
     }
   };
 
+  /**
+   * Adds a new tag to the tags array if it's valid
+   *
+   * Tags must be:
+   * - Non-empty after trimming
+   * - Not already in the list
+   * - Under the max limit of 10 tags
+   */
   const addTag = () => {
     const trimmedTag = newTag.trim().toLowerCase();
     if (trimmedTag && !tags.includes(trimmedTag) && tags.length < 10) {
@@ -148,6 +202,12 @@ const EditPlaylist: React.FC<EditPlaylistProps> = ({
     }
   };
 
+  /**
+   * Handles key down events in the tag input field
+   * Adds the tag when Enter key is pressed
+   *
+   * @param {React.KeyboardEvent} e - Keyboard event
+   */
   const handleTagKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter") {
       e.preventDefault();
@@ -155,10 +215,24 @@ const EditPlaylist: React.FC<EditPlaylistProps> = ({
     }
   };
 
+  /**
+   * Removes a tag from the tags array
+   *
+   * @param {string} tagToRemove - Tag to be removed
+   */
   const removeTag = (tagToRemove: string) => {
     setTags(tags.filter((tag) => tag !== tagToRemove));
   };
 
+  /**
+   * Handles thumbnail image selection and validation
+   *
+   * Validates:
+   * - File type (JPEG, PNG, WebP)
+   * - File size (max 5MB)
+   *
+   * @param {React.ChangeEvent<HTMLInputElement>} e - File input change event
+   */
   const handleThumbnailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (files && files.length > 0) {
@@ -191,12 +265,18 @@ const EditPlaylist: React.FC<EditPlaylistProps> = ({
     }
   };
 
+  /**
+   * Programmatically opens the file input dialog
+   */
   const triggerFileInput = () => {
     if (fileInputRef.current) {
       fileInputRef.current.click();
     }
   };
 
+  /**
+   * Removes the selected thumbnail image
+   */
   const removeThumbnail = () => {
     setThumbnail(null);
     setThumbnailPreview(null);
@@ -206,6 +286,17 @@ const EditPlaylist: React.FC<EditPlaylistProps> = ({
     }
   };
 
+  /**
+   * Validates the form data before submission
+   *
+   * Checks:
+   * - Title presence and length
+   * - Description length
+   * - Tag count
+   * - Thumbnail presence
+   *
+   * @returns {boolean} True if all validation passes, false otherwise
+   */
   const validate = (): boolean => {
     const errors: ValidationErrors = {};
 
@@ -231,6 +322,13 @@ const EditPlaylist: React.FC<EditPlaylistProps> = ({
     return Object.keys(errors).length === 0;
   };
 
+  /**
+   * Handles form submission for updating the playlist
+   *
+   * Validates form data, constructs FormData, and sends PATCH request
+   *
+   * @param {React.FormEvent} e - Form submission event
+   */
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 

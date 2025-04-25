@@ -14,10 +14,22 @@ import { CiAt, CiLock } from "react-icons/ci";
 import { MdEdit } from "react-icons/md";
 import { AiOutlineLoading3Quarters } from "react-icons/ai";
 
+/**
+ * Props for the OwnProfile component
+ * @typedef {Object} OwnProfileProps
+ * @property {string} username - The username of the current user
+ */
 type OwnProfileProps = {
   username: string;
 };
 
+/**
+ * OwnProfile component for displaying the logged-in user's profile
+ * Includes personal information, statistics, and user's playlists
+ *
+ * @param {OwnProfileProps} props - Component props
+ * @returns {JSX.Element} - The rendered component
+ */
 const OwnProfile = ({ username }: OwnProfileProps) => {
   const dispatch = useDispatch<AppDispatch>();
   const navigate = useNavigate();
@@ -41,18 +53,28 @@ const OwnProfile = ({ username }: OwnProfileProps) => {
     profileImage: defaultProfileImage,
   });
 
+  /**
+   * Effect to fetch user data when the user object is available
+   */
   useEffect(() => {
     if (user) {
       fetchUserData();
     }
   }, [user]);
 
+  /**
+   * Effect to dispatch getUserInfo action when user is logged in
+   * but detailed user information is not yet available
+   */
   useEffect(() => {
     if (user && Object.keys(userInfo || {}).length === 0) {
       dispatch(getUserInfo());
     }
   }, [user, userInfo, dispatch]);
 
+  /**
+   * Effect to update local profile state when userInfo changes
+   */
   useEffect(() => {
     if (userInfo) {
       setProfile((prev) => ({
@@ -68,6 +90,13 @@ const OwnProfile = ({ username }: OwnProfileProps) => {
     }
   }, [userInfo]);
 
+  /**
+   * Fetches all user-related data including playlists, likes, and followers
+   * Updates state with counts and handles loading/error states
+   *
+   * @async
+   * @returns {Promise<void>}
+   */
   const fetchUserData = async () => {
     setIsLoading(true);
     setError(null);
@@ -126,10 +155,17 @@ const OwnProfile = ({ username }: OwnProfileProps) => {
     }
   };
 
+  /**
+   * Opens the profile editing modal
+   */
   const handleEditToggle = () => {
     setIsEditing(true);
   };
 
+  /**
+   * Callback handler for when profile is updated
+   * Refreshes user data to reflect changes
+   */
   const handleProfileUpdated = () => {
     fetchUserData();
   };

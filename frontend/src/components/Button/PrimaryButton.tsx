@@ -1,17 +1,30 @@
-/**
- * Primary button component with the main brand color.
- * Used for primary actions and call-to-actions throughout the application.
- */
 import React from "react";
 
+/**
+ * Props for the PrimaryButton component
+ * @interface PrimaryButtonProps
+ * @property {"button" | "submit" | "reset"} [type="button"] - The button type attribute
+ * @property {string} [className] - Additional CSS classes to apply to the button
+ * @property {boolean} [disabled] - Whether the button is disabled
+ * @property {React.ReactNode} children - The content to render inside the button
+ * @property {(e: React.MouseEvent<HTMLButtonElement>) => void | Promise<void>} [onClick] - Function to execute when button is clicked
+ */
 interface PrimaryButtonProps {
   type?: "button" | "submit" | "reset";
   className?: string;
   disabled?: boolean;
   children: React.ReactNode;
-  onClick?: () => void;
+  onClick?: (e: React.MouseEvent<HTMLButtonElement>) => void | Promise<void>;
 }
 
+/**
+ * PrimaryButton component
+ *
+ * A primary styled button with purple background
+ *
+ * @param {PrimaryButtonProps} props - Component props
+ * @returns {JSX.Element} - Rendered component
+ */
 export const PrimaryButton: React.FC<PrimaryButtonProps> = ({
   type = "button",
   className = "",

@@ -6,6 +6,16 @@ import NavBar from "../components/Navigation/NavBar";
 import OwnProfile from "../components/Profile/OwnProfile";
 import UserProfile from "../components/Profile/UserProfile";
 
+/**
+ * ProfilePage Component
+ *
+ * @description A page component that conditionally renders either the current user's profile
+ * or another user's profile based on the username URL parameter. Determines whether
+ * the profile being viewed belongs to the currently logged in user.
+ *
+ * @component
+ * @returns {JSX.Element} Rendered profile page with appropriate profile component
+ */
 const ProfilePage = () => {
   const { username } = useParams();
   const { userInfo } = useSelector((state: RootState) => state.auth);

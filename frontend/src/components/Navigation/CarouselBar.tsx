@@ -18,7 +18,6 @@ const CarouselBar: React.FC<CarouselBarProps> = ({
 }) => {
   const [currentIndex, setCurrentIndex] = useState<number>(0);
 
-  // Calculate if there are enough items to enable navigation
   const maxIndex = Math.max(0, totalItems - itemsPerPage);
   const hasItems = totalItems > 0;
 

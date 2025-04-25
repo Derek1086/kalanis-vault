@@ -11,6 +11,10 @@ import { PrimaryIconButton } from "../components/Button";
 
 import { CiCircleCheck } from "react-icons/ci";
 
+/**
+ * Account activation page component
+ * @returns {JSX.Element} The rendered ActivatePage component
+ */
 const ActivatePage = () => {
   const { uid, token } = useParams();
   const dispatch = useDispatch<AppDispatch>();
@@ -20,6 +24,10 @@ const ActivatePage = () => {
     (state: RootState) => state.auth
   );
 
+  /**
+   * Handles the form submission for account activation
+   * @param {React.MouseEvent<HTMLButtonElement>} e - The click event
+   */
   const handleSubmit = (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
 
@@ -30,6 +38,10 @@ const ActivatePage = () => {
     dispatch(activate(userData));
   };
 
+  /**
+   * Effect hook to handle side effects based on authentication state changes
+   * Shows appropriate toast notifications and redirects on success
+   */
   useEffect(() => {
     if (isError) {
       toast.error(message, { theme: "dark" });

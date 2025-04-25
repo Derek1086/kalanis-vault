@@ -1,6 +1,5 @@
 import axios from "axios";
 import React, { useState, useEffect } from "react";
-import { toast } from "react-toastify";
 import { useSelector } from "react-redux";
 import { RootState } from "../../app/store";
 import {
@@ -18,6 +17,10 @@ import { IoWarningOutline } from "react-icons/io5";
 import { CiLink } from "react-icons/ci";
 import { BsCardHeading } from "react-icons/bs";
 
+/**
+ * Global TypeScript declaration for TikTok's embed functionality
+ * @global
+ */
 declare global {
   interface Window {
     tiktokEmbed?: {
@@ -26,6 +29,10 @@ declare global {
   }
 }
 
+/**
+ * Props for the EmbedVideo component
+ * @interface EmbedVideoProps
+ */
 interface EmbedVideoProps {
   isOpen: boolean;
   onClose: () => void;
@@ -33,12 +40,27 @@ interface EmbedVideoProps {
   playlistId: string | undefined;
 }
 
+/**
+ * Interface for validation errors from the form or API
+ * @interface ValidationErrors
+ */
 interface ValidationErrors {
   tiktok_url?: string;
   title?: string;
   non_field_errors?: string[];
 }
 
+/**
+ * Component for embedding TikTok videos into a playlist
+ *
+ * Allows users to add TikTok videos to their playlists by providing
+ * a TikTok video URL. The component handles validation, link analysis,
+ * and API submission.
+ *
+ * @component
+ * @param {EmbedVideoProps} props - The component props
+ * @returns {JSX.Element} The rendered component
+ */
 const EmbedVideo: React.FC<EmbedVideoProps> = ({
   isOpen,
   onClose,
@@ -57,9 +79,11 @@ const EmbedVideo: React.FC<EmbedVideoProps> = ({
     {}
   );
   const [linkResult, setLinkResult] = useState<LinkAnalysisResult | null>(null);
-  const [embedInitialized, setEmbedInitialized] = useState<boolean>(false);
 
-  React.useEffect(() => {
+  /**
+   * Reset form state when modal is closed
+   */
+  useEffect(() => {
     if (!isOpen) {
       setVideoUrl("");
       setVideoTitle("");
@@ -67,43 +91,57 @@ const EmbedVideo: React.FC<EmbedVideoProps> = ({
       setError(null);
       setValidationErrors({});
       setLinkResult(null);
-      setEmbedInitialized(false);
     }
   }, [isOpen]);
 
+  /**
+   * Handle TikTok embed script loading and cleanup
+   * Manages the loading of TikTok's embed script and removal of
+   * any existing iframe elements to prevent duplicates
+   */
   useEffect(() => {
-    if (
-      linkResult?.platform === "tiktok" &&
-      linkResult.isValid &&
-      !embedInitialized
-    ) {
+    const embedContainers = document.querySelectorAll(".tiktok-embed");
+    embedContainers.forEach((container) => {
+      Array.from(container.children).forEach((child) => {
+        if (child.tagName === "IFRAME") {
+          child.remove();
+        }
+      });
+    });
+
+    if (linkResult?.platform === "tiktok" && linkResult.isValid) {
       const existingScript = document.getElementById("tiktok-embed-script");
       if (existingScript) {
         existingScript.remove();
       }
 
-      const script = document.createElement("script");
-      script.id = "tiktok-embed-script";
-      script.src = "https://www.tiktok.com/embed.js";
-      script.async = true;
-      script.onload = () => {
-        setEmbedInitialized(true);
+      setTimeout(() => {
+        const script = document.createElement("script");
+        script.id = "tiktok-embed-script";
+        script.src = "https://www.tiktok.com/embed.js";
+        script.async = true;
+        script.onload = () => {
+          if (window.tiktokEmbed) {
+            window.tiktokEmbed.reloadEmbeds();
+          }
+        };
 
-        if (window.tiktokEmbed) {
-          window.tiktokEmbed.reloadEmbeds();
-        }
-      };
-
-      document.body.appendChild(script);
+        document.body.appendChild(script);
+      }, 100);
 
       return () => {
-        if (script.parentNode) {
+        const script = document.getElementById("tiktok-embed-script");
+        if (script && script.parentNode) {
           script.parentNode.removeChild(script);
         }
       };
     }
-  }, [linkResult, embedInitialized]);
+  }, [linkResult]);
 
+  /**
+   * Retrieves the authentication token either from Redux state or localStorage
+   * @returns {string|null} The authentication token or null if not found
+   */
   const getAuthToken = (): string | null => {
     if (user?.access) {
       return user.access;
@@ -122,6 +160,10 @@ const EmbedVideo: React.FC<EmbedVideoProps> = ({
     return null;
   };
 
+  /**
+   * Updates video URL state and clears related validation errors
+   * @param {React.ChangeEvent<HTMLInputElement>} e - The change event
+   */
   const handleUrlChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setVideoUrl(e.target.value);
     if (validationErrors.tiktok_url) {
@@ -129,6 +171,10 @@ const EmbedVideo: React.FC<EmbedVideoProps> = ({
     }
   };
 
+  /**
+   * Updates video title state and clears related validation errors
+   * @param {React.ChangeEvent<HTMLInputElement>} e - The change event
+   */
   const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setVideoTitle(e.target.value);
     if (validationErrors.title) {
@@ -136,6 +182,13 @@ const EmbedVideo: React.FC<EmbedVideoProps> = ({
     }
   };
 
+  /**
+   * Detects the social media platform from a URL
+   * Currently supports TikTok and Instagram detection
+   *
+   * @param {string} url - The URL to analyze
+   * @returns {LinkAnalysisResult} Result object with platform and validity
+   */
   const detectPlatform = (url: string): LinkAnalysisResult => {
     try {
       const urlObj = new URL(url);
@@ -155,6 +208,12 @@ const EmbedVideo: React.FC<EmbedVideoProps> = ({
     }
   };
 
+  /**
+   * Extracts the TikTok video ID from a TikTok URL
+   *
+   * @param {string} url - The TikTok URL
+   * @returns {string|null} The TikTok video ID or null if not found
+   */
   const extractTikTokId = (url: string): string | null => {
     try {
       if (url.includes("vm.tiktok.com")) {
@@ -169,13 +228,17 @@ const EmbedVideo: React.FC<EmbedVideoProps> = ({
     }
   };
 
+  /**
+   * Analyzes the provided link to determine if it's a valid TikTok URL
+   * If valid, fetches metadata from TikTok's oEmbed API
+   */
   const analyzeLink = async () => {
     if (!videoUrl.trim()) return;
 
     setIsAnalyzing(true);
     setError(null);
-    setEmbedInitialized(false);
-    setThumbnailUrl(null); // Reset thumbnail URL when analyzing a new link
+    setThumbnailUrl(null);
+    setLinkResult(null);
 
     try {
       const detectionResult = detectPlatform(videoUrl);
@@ -204,9 +267,7 @@ const EmbedVideo: React.FC<EmbedVideoProps> = ({
               thumbnailUrl: data.thumbnail_url,
             };
 
-            if (!videoTitle && data.title) {
-              setVideoTitle(data.title);
-            }
+            setVideoTitle(data.title || "");
 
             if (data.thumbnail_url) {
               setThumbnailUrl(data.thumbnail_url);
@@ -237,6 +298,11 @@ const EmbedVideo: React.FC<EmbedVideoProps> = ({
     }
   };
 
+  /**
+   * Validates form input before submission
+   *
+   * @returns {boolean} True if validation passes, false otherwise
+   */
   const validate = (): boolean => {
     const errors: ValidationErrors = {};
 
@@ -257,6 +323,11 @@ const EmbedVideo: React.FC<EmbedVideoProps> = ({
     return Object.keys(errors).length === 0;
   };
 
+  /**
+   * Handles form submission to add a video to the playlist
+   *
+   * @param {React.FormEvent} e - The form submit event
+   */
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -296,12 +367,7 @@ const EmbedVideo: React.FC<EmbedVideoProps> = ({
       );
 
       setIsLoading(false);
-      toast.success("Video added successfully", {
-        theme: "dark",
-      });
-
       onVideoAdded(response.data);
-      console.log("Video added:", response.data);
       onClose();
     } catch (err) {
       setIsLoading(false);
@@ -386,6 +452,7 @@ const EmbedVideo: React.FC<EmbedVideoProps> = ({
             {/* TikTok Embed */}
             <div className="mb-3">
               <blockquote
+                key={linkResult.url}
                 className="tiktok-embed"
                 cite={linkResult.url}
                 data-video-id={extractTikTokId(linkResult.url)}
