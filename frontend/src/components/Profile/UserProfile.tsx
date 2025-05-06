@@ -55,13 +55,39 @@ const UserProfile = ({ username }: UserProfileProps) => {
   const defaultProfileImage = `${BACKEND_DOMAIN}/media/profile_pics/default.png`;
 
   /**
+   * Retrieves the authentication token from user state or localStorage
+   * @returns {string|null} The authentication token or null if not available
+   */
+  const getAuthToken = () => {
+    if (user?.access) {
+      return user.access;
+    }
+
+    try {
+      const storedUser = localStorage.getItem("user");
+      if (storedUser) {
+        const parsedUser = JSON.parse(storedUser);
+        return parsedUser.access;
+      }
+    } catch (error) {
+      console.error("Error parsing user from localStorage:", error);
+    }
+
+    return null;
+  };
+
+  /**
    * Effect hook to fetch user profile data when component mounts or username changes
    */
   useEffect(() => {
-    if (user && username) {
+    if (username) {
       fetchUserProfile();
+    } else {
+      console.error("No username provided to UserProfile component");
+      setError("Username is required");
+      setIsLoading(false);
     }
-  }, [user, username]);
+  }, [username]);
 
   /**
    * Fetches all profile data including personal info, playlists, followers, and likes
@@ -75,77 +101,88 @@ const UserProfile = ({ username }: UserProfileProps) => {
     setError(null);
 
     try {
-      const token =
-        user?.access || localStorage.getItem("user")
-          ? JSON.parse(localStorage.getItem("user") || "{}").access
-          : null;
+      const token = getAuthToken();
 
       if (!token) {
+        console.warn("No authentication token found");
         setError("Authentication required");
         setIsLoading(false);
         return;
       }
 
-      const profileResponse = await axios.get<UserData>(
-        `${BACKEND_DOMAIN}/api/v1/users/profile/${username}/`,
-        {
+      try {
+        const userApiUrl = `${BACKEND_DOMAIN}/api/v1/users/by-username/${username}/`;
+
+        const userResponse = await axios.get(userApiUrl, {
           headers: {
             Authorization: `Bearer ${token}`,
           },
+        });
+
+        if (userResponse.data) {
+          setProfileData(userResponse.data);
+          const userId = userResponse.data.id;
+
+          try {
+            const playlistsResponse = await axios.get<PlaylistData[]>(
+              `${BACKEND_DOMAIN}/api/v1/playlists/`,
+              {
+                params: { user: userId },
+                headers: {
+                  Authorization: `Bearer ${token}`,
+                },
+              }
+            );
+            setPlaylistsCount(playlistsResponse.data.length);
+          } catch (playlistErr: any) {
+            console.error("Error fetching playlists:", playlistErr);
+            console.error("Response data:", playlistErr.response?.data);
+          }
+
+          try {
+            const likedPlaylistsResponse = await axios.get<PlaylistData[]>(
+              `${BACKEND_DOMAIN}/api/v1/playlists/liked_playlists/`,
+              {
+                headers: {
+                  Authorization: `Bearer ${token}`,
+                },
+                params: { user_id: userId },
+              }
+            );
+            setLikesCount(likedPlaylistsResponse.data.length);
+          } catch (likesErr: any) {
+            console.error("Error fetching liked playlists:", likesErr);
+            console.error("Response data:", likesErr.response?.data);
+          }
+
+          setIsLoading(false);
+        } else {
+          throw new Error("Invalid user data received");
         }
-      );
+      } catch (userErr: any) {
+        console.error("Error fetching user profile:", userErr);
+        if (userErr.response) {
+          console.error("Response status:", userErr.response.status);
+          console.error("Response data:", userErr.response.data);
 
-      setProfileData(profileResponse.data);
-
-      const playlistsResponse = await axios.get<PlaylistData[]>(
-        `${BACKEND_DOMAIN}/api/v1/playlists/user/${profileResponse.data.id}/`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+          setError(`User profile not found (${userErr.response.status})`);
+        } else if (userErr.request) {
+          console.error("No response received:", userErr.request);
+          setError("Server did not respond. Check network connection.");
+        } else {
+          console.error("Error message:", userErr.message);
+          setError(`Request error: ${userErr.message}`);
         }
-      );
-      setPlaylistsCount(playlistsResponse.data.length);
-
-      const likedPlaylistsResponse = await axios.get<PlaylistData[]>(
-        `${BACKEND_DOMAIN}/api/v1/playlists/liked_by/${profileResponse.data.id}/`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-      setLikesCount(likedPlaylistsResponse.data.length);
-
-      const followersResponse = await axios.get(
-        `${BACKEND_DOMAIN}/api/v1/follows/`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-
-      const followers = followersResponse.data.filter(
-        (follow: any) => follow.followed === profileResponse.data.id
-      );
-      setFollowersCount(followers.length);
-
-      const currentUserId = JSON.parse(
-        localStorage.getItem("userInfo") || "{}"
-      ).id;
-      const isCurrentlyFollowing = followersResponse.data.some(
-        (follow: any) =>
-          follow.follower === currentUserId &&
-          follow.followed === profileResponse.data.id
-      );
-      setIsFollowing(isCurrentlyFollowing);
-
-      setIsLoading(false);
+        setIsLoading(false);
+      }
     } catch (err) {
+      console.error("Error in fetchUserProfile:", err);
+      setError(
+        `Failed to load user profile: ${
+          err instanceof Error ? err.message : "Unknown error"
+        }`
+      );
       setIsLoading(false);
-      console.error("Error fetching user profile:", err);
-      setError("Failed to load user profile");
     }
   };
 
@@ -158,12 +195,12 @@ const UserProfile = ({ username }: UserProfileProps) => {
    */
   const handleFollowToggle = async () => {
     try {
-      const token =
-        user?.access || localStorage.getItem("user")
-          ? JSON.parse(localStorage.getItem("user") || "{}").access
-          : null;
+      const token = getAuthToken();
 
-      if (!token || !profileData) return;
+      if (!token || !profileData) {
+        console.error("Missing token or profile data");
+        return;
+      }
 
       if (isFollowing) {
         await axios.delete(
@@ -187,8 +224,14 @@ const UserProfile = ({ username }: UserProfileProps) => {
       }
 
       fetchUserProfile();
-    } catch (err) {
+    } catch (err: any) {
       console.error("Error updating follow status:", err);
+      console.error("Response data:", err.response?.data);
+      setError(
+        `Failed to update follow status: ${
+          err instanceof Error ? err.message : "Unknown error"
+        }`
+      );
     }
   };
 
@@ -200,10 +243,18 @@ const UserProfile = ({ username }: UserProfileProps) => {
     );
   }
 
+  if (error) {
+    return (
+      <div className="p-4 bg-red-900 border border-red-700 text-red-200 rounded m-4">
+        <p className="mb-4">{error}</p>
+      </div>
+    );
+  }
+
   if (!profileData) {
     return (
       <div className="p-4 bg-red-900 border border-red-700 text-red-200 rounded m-4">
-        User profile not found
+        <p className="mb-4">User profile not found</p>
       </div>
     );
   }
@@ -275,19 +326,10 @@ const UserProfile = ({ username }: UserProfileProps) => {
         </div>
       </div>
 
-      {/* Divider */}
-      <div className="border-t border-gray-400 my-6"></div>
-
       {/* Account content summary */}
-      <div className="border-t border-gray-400 pt-6 mt-6">
+      <div className="border-t border-gray-400 pt-6">
         <UserPlaylists username={username} />
       </div>
-
-      {error && (
-        <div className="p-4 bg-red-900 border border-red-700 text-red-200 rounded m-4">
-          {error}
-        </div>
-      )}
     </div>
   );
 };

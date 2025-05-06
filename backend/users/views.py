@@ -4,6 +4,7 @@ from rest_framework.parsers import MultiPartParser, FormParser
 from .serializers import CreateUserSerializer
 from rest_framework.response import Response
 from rest_framework import status
+from django.db.models import Q, Count
 
 User = get_user_model()
 
@@ -35,3 +36,12 @@ class UserProfileView(generics.RetrieveUpdateAPIView):
             return Response(serializer.data, status=status.HTTP_200_OK)
         
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class UserByUsernameView(generics.RetrieveAPIView):
+    """API endpoint to retrieve a user by their username."""
+    queryset = User.objects.all()
+    serializer_class = CreateUserSerializer
+    permission_classes = [permissions.IsAuthenticated]
+    lookup_field = 'username'
+    lookup_url_kwarg = 'username'

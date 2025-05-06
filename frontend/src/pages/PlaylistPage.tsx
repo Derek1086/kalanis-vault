@@ -43,6 +43,7 @@ const PlaylistPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState<boolean>(false);
   const [isDeleting, setIsDeleting] = useState<boolean>(false);
+  const [hasLoaded, setHasLoaded] = useState<boolean>(false);
 
   const isOwner = user && playlist?.user?.id === userInfo?.id;
 
@@ -53,10 +54,11 @@ const PlaylistPage: React.FC = () => {
   }, [user, userInfo, dispatch]);
 
   useEffect(() => {
-    if (playlistId) {
+    if (playlistId && !hasLoaded) {
       fetchPlaylistDetails();
+      setHasLoaded(true);
     }
-  }, [playlistId, user, userInfo]);
+  }, [playlistId]);
 
   /**
    * Returns the current authentication token from user state or local storage.

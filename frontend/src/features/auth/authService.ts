@@ -20,9 +20,16 @@ const register = async (userData: any) => {
     },
   };
 
-  const response = await axios.post(REGISTER_URL, userData, config);
-
-  return response.data;
+  try {
+    const response = await axios.post(REGISTER_URL, userData, config);
+    return response.data;
+  } catch (error: any) {
+    if (error.response && error.response.data) {
+      console.error("Registration API error:", error.response.data);
+      throw error.response.data;
+    }
+    throw error;
+  }
 };
 
 /**
@@ -36,8 +43,6 @@ const login = async (userData: { email: string; password: string }) => {
       "Content-type": "application/json",
     },
   };
-
-  console.log(userData);
 
   const response = await axios.post(LOGIN_URL, userData, config);
 

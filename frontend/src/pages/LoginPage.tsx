@@ -134,13 +134,6 @@ const LoginPage = () => {
           <SecondaryButton type="button" onClick={() => navigate("/register")}>
             Create Account
           </SecondaryButton>
-          <SecondaryButton
-            type="button"
-            className="bg-transparent hover:bg-transparent"
-            onClick={() => navigate("/")}
-          >
-            Continue as Guest
-          </SecondaryButton>
         </form>
       </Card>
     </div>

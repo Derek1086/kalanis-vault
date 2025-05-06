@@ -5,6 +5,11 @@ import { RootState, AppDispatch } from "../../app/store";
 import { logout, reset } from "../../features/auth/authSlice";
 import { BACKEND_DOMAIN } from "../../types/playlists";
 
+import { SearchField } from "../Input";
+import { IconButton } from "../Button";
+import { DropDownMenu, DropDownItem, DropDownDivider } from "./DropDown";
+import AutoComplete from "./AutoComplete";
+
 import {
   CiCirclePlus,
   CiBoxList,
@@ -13,12 +18,6 @@ import {
   CiHeart,
 } from "react-icons/ci";
 import { IoHomeOutline, IoSearch } from "react-icons/io5";
-import { IoMdClose } from "react-icons/io";
-import { FaHistory } from "react-icons/fa";
-
-import { SearchField } from "../Input";
-import { IconButton } from "../Button";
-import { DropDownMenu, DropDownItem, DropDownDivider } from "./DropDown";
 
 interface NavBarProps {
   onCreatePlaylist?: () => void;
@@ -30,7 +29,7 @@ const MAX_SEARCH_HISTORY = 5;
  * Navigation bar component that displays a search field and user controls.
  * Handles user authentication state and provides navigation functionality.
  * Features:
- * - Search functionality with search history autocomplete
+ * - Search functionality with search history autocomplete that filters based on query
  * - User dropdown menu with logout option
  * - Responsive design
  * - User profile picture display
@@ -42,7 +41,6 @@ const NavBar = ({ onCreatePlaylist }: NavBarProps) => {
   const [searchHistory, setSearchHistory] = useState<string[]>([]);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
-  const searchHistoryRef = useRef<HTMLDivElement>(null);
 
   const navigate = useNavigate();
   const dispatch = useDispatch<AppDispatch>();
@@ -161,22 +159,13 @@ const NavBar = ({ onCreatePlaylist }: NavBarProps) => {
       ) {
         setDropdownOpen(false);
       }
-
-      if (
-        searchHistoryRef.current &&
-        !searchHistoryRef.current.contains(event.target as Node) &&
-        searchInputRef.current &&
-        !searchInputRef.current.contains(event.target as Node)
-      ) {
-        setShowSearchHistory(false);
-      }
     };
 
     document.addEventListener("mousedown", handleClickOutside);
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
-  }, [dropdownRef, searchHistoryRef, searchInputRef]);
+  }, [dropdownRef]);
 
   return (
     <nav className="bg-[#151316] shadow-md px-6 py-4">
@@ -213,35 +202,14 @@ const NavBar = ({ onCreatePlaylist }: NavBarProps) => {
             <IoHomeOutline className="h-5 w-5 text-gray-400 hover:text-gray-600 cursor-pointer" />
           </Link>
 
-          {/* Search History Autocomplete Dropdown */}
-          {showSearchHistory && searchHistory.length > 0 && (
-            <div
-              ref={searchHistoryRef}
-              className="absolute z-50 w-full bg-[#1e1c1f] top-12 rounded-md shadow-lg"
-            >
-              <ul className="max-h-64 overflow-y-auto">
-                {searchHistory.map((item, index) => (
-                  <li
-                    key={`${item}-${index}`}
-                    className="flex items-center justify-between px-4 py-2 hover:bg-[#2a282b] cursor-pointer text-white"
-                    onClick={() => handleSelectHistoryItem(item)}
-                  >
-                    <div className="flex items-center">
-                      <FaHistory className="h-4 w-4 text-gray-400 mr-2" />
-                      <span>{item}</span>
-                    </div>
-                    <button
-                      className="text-gray-400 hover:text-gray-200 cursor-pointer"
-                      onClick={(e) => removeFromSearchHistory(item, e)}
-                      aria-label={`Remove ${item} from search history`}
-                    >
-                      <IoMdClose className="h-4 w-4" />
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
+          <AutoComplete
+            searchQuery={searchQuery}
+            searchHistory={searchHistory}
+            show={showSearchHistory}
+            onSelectItem={handleSelectHistoryItem}
+            onRemoveItem={removeFromSearchHistory}
+            onClose={() => setShowSearchHistory(false)}
+          />
         </div>
         {user ? (
           <div className="flex items-center space-x-4">
@@ -266,7 +234,6 @@ const NavBar = ({ onCreatePlaylist }: NavBarProps) => {
                     alt={`${userInfo?.first_name || "User"}'s profile`}
                     className="h-full w-full object-cover"
                     onError={(e) => {
-                      // If profile image fails to load, use default
                       e.currentTarget.src = defaultProfileImage;
                     }}
                   />

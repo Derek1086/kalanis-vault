@@ -1,7 +1,7 @@
 from rest_framework import viewsets, status, filters
 from rest_framework.decorators import action
 from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, SAFE_METHODS
 from .models import Playlist, Video, UserFollow, Tag, PlaylistView
 from .serializers import (
     PlaylistSerializer, 
@@ -11,7 +11,7 @@ from .serializers import (
     TagSerializer
 )
 from .permissions import IsOwnerOrReadOnly
-from django.db.models import Q, F
+from django.db.models import Q, F  
 from django.utils import timezone
 from users.models import User
 
@@ -73,19 +73,24 @@ class PlaylistViewSet(viewsets.ModelViewSet):
         return PlaylistSerializer
     
     def retrieve(self, request, *args, **kwargs):
-        """
-        Increment view count when a playlist is viewed and record in user's history.
-        """
         instance = self.get_object()
         
         if request.user.is_authenticated:
+            view_exists = PlaylistView.objects.filter(
+                user=request.user,
+                playlist=instance
+            ).exists()
+            
             PlaylistView.objects.update_or_create(
                 user=request.user,
                 playlist=instance,
                 defaults={'viewed_at': timezone.now()}
             )
             
-            if request.user != instance.user:
+            # Only increment the view count if:
+            # 1. The viewer is not the owner
+            # 2. This is a new view (not just updating an existing view)
+            if request.user != instance.user and not view_exists:
                 instance.view_count = F('view_count') + 1
                 instance.save(update_fields=['view_count'])
                 instance.refresh_from_db()
@@ -141,10 +146,11 @@ class PlaylistViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
     
-    @action(detail=True, methods=['post'])
+    @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated])
     def like(self, request, pk=None):
         """
         Toggle like status for a playlist.
+        Any authenticated user can like/unlike a playlist.
         """
         playlist = self.get_object()
         user = request.user
@@ -156,10 +162,11 @@ class PlaylistViewSet(viewsets.ModelViewSet):
             playlist.likes.add(user)
             return Response({'status': 'liked'})
     
-    @action(detail=True, methods=['post'])
+    @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated])
     def share(self, request, pk=None):
         """
         Increment share count for a playlist.
+        Any authenticated user can share a playlist.
         """
         playlist = self.get_object()
         playlist.share_count = F('share_count') + 1

@@ -24,7 +24,6 @@ import { PrimaryButton } from "../components/Button";
  * Validates form inputs, dispatches registration action, and handles responses.
  */
 const RegisterPage = () => {
-  // Form state with all required registration fields
   const [formData, setFormData] = useState({
     first_name: "",
     last_name: "",
@@ -42,7 +41,6 @@ const RegisterPage = () => {
   const dispatch = useDispatch<AppDispatch>();
   const navigate = useNavigate();
 
-  // Get authentication state from Redux store
   const { user, isError, isSuccess, message } = useSelector(
     (state: RootState) => state.auth
   );
@@ -63,17 +61,11 @@ const RegisterPage = () => {
    * - Ensures username is provided
    * - Dispatches register action if validation passes
    */
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
 
-    if (password !== re_password) {
-      toast.error("Passwords do not match", { theme: "dark" });
-      setIsLoading(false);
-    } else if (!username) {
-      toast.error("Username is required", { theme: "dark" });
-      setIsLoading(false);
-    } else {
+    try {
       const userData = {
         first_name,
         last_name,
@@ -82,7 +74,25 @@ const RegisterPage = () => {
         password,
         re_password,
       };
-      dispatch(register(userData));
+
+      console.log("Submitting user data:", userData);
+      await dispatch(register(userData)).unwrap();
+    } catch (error: any) {
+      console.error("Registration error:", error);
+
+      if (typeof error === "object" && error !== null) {
+        Object.entries(error).forEach(([field, messages]) => {
+          if (Array.isArray(messages) && messages.length > 0) {
+            toast.error(`${field}: ${messages[0]}`, { theme: "dark" });
+          } else if (typeof messages === "string") {
+            toast.error(`${field}: ${messages}`, { theme: "dark" });
+          }
+        });
+      } else {
+        toast.error(message || "Registration failed", { theme: "dark" });
+      }
+
+      setIsLoading(false);
     }
   };
 
@@ -179,7 +189,7 @@ const RegisterPage = () => {
             )}
           </PrimaryButton>
           <div className="text-center mt-4">
-            <p className="text-sm text-gray-400">
+            <span className="text-sm text-gray-400">
               <SecondaryText
                 text="Already have an account?"
                 className="inline mr-2"
@@ -190,7 +200,7 @@ const RegisterPage = () => {
               >
                 Log In
               </NavLink>
-            </p>
+            </span>
           </div>
         </form>
       </Card>

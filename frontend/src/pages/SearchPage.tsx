@@ -4,6 +4,7 @@ import { useParams } from "react-router-dom";
 import { UserPlaylistData, BACKEND_DOMAIN } from "../types/playlists.ts";
 
 import NavBar from "../components/Navigation/NavBar.tsx";
+import { FilterButton } from "../components/Button";
 import { Header, SecondaryText } from "../components/Typography";
 import PlaylistCard from "../components/Playlists/PlaylistCard.tsx";
 
@@ -24,6 +25,7 @@ const SearchPage = () => {
   const [playlists, setPlaylists] = useState<UserPlaylistData[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const [activeFilter, setActiveFilter] = useState<string>("All");
 
   /**
    * Effect hook to fetch search results when query changes
@@ -139,6 +141,21 @@ const SearchPage = () => {
             playlists.length !== 1 ? "s" : ""
           } for "${query}"`}
         />
+
+        {playlists.length >= 1 && (
+          <div className="flex space-x-2">
+            {["All", "Users", "Playlists"].map((filter) => (
+              <FilterButton
+                key={filter}
+                title={filter}
+                active={activeFilter === filter}
+                onClick={() => {
+                  setActiveFilter((prev) => (prev === filter ? "" : filter));
+                }}
+              />
+            ))}
+          </div>
+        )}
 
         {error && (
           <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4 flex items-center">

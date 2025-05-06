@@ -280,7 +280,7 @@ const OwnProfile = ({ username }: OwnProfileProps) => {
           </div>
 
           {/* Account content summary */}
-          <div className="border-t border-gray-400 pt-6 mt-6">
+          <div className="border-t border-gray-400 pt-6">
             <UserPlaylists username={userInfo?.username || username} />
           </div>
         </div>

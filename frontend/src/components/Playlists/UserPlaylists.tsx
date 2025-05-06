@@ -27,6 +27,7 @@ const UserPlaylists: React.FC<UserPlaylistsProps> = ({ username }) => {
   const [playlists, setPlaylists] = useState<UserPlaylistData[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const [isCurrentUser, setIsCurrentUser] = useState<boolean>(false);
 
   /**
    * Effect hook to fetch user playlists when the username changes
@@ -57,14 +58,48 @@ const UserPlaylists: React.FC<UserPlaylistsProps> = ({ username }) => {
         return;
       }
 
-      const response = await axios.get<UserPlaylistData[]>(
-        `${BACKEND_DOMAIN}/api/v1/playlists/my_playlists/`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
+      // Check if the username is the current logged-in user
+      const currentUser = localStorage.getItem("user")
+        ? JSON.parse(localStorage.getItem("user") || "{}").username
+        : null;
+
+      const isCurrentUser = username === currentUser;
+      setIsCurrentUser(isCurrentUser);
+
+      let response;
+      if (isCurrentUser) {
+        // If viewing own profile, fetch from my_playlists endpoint
+        response = await axios.get<UserPlaylistData[]>(
+          `${BACKEND_DOMAIN}/api/v1/playlists/my_playlists/`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+      } else {
+        // If viewing another user's profile, fetch all public playlists and filter by username
+        response = await axios.get<UserPlaylistData[]>(
+          `${BACKEND_DOMAIN}/api/v1/playlists/`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+            params: {
+              username: username,
+            },
+          }
+        );
+
+        // Filter the playlists to only show the ones from the specified user
+        const filteredPlaylists = response.data.filter(
+          (playlist) => playlist.user.username === username
+        );
+
+        setPlaylists(filteredPlaylists);
+        setIsLoading(false);
+        return;
+      }
 
       setPlaylists(response.data);
       setIsLoading(false);
@@ -102,7 +137,7 @@ const UserPlaylists: React.FC<UserPlaylistsProps> = ({ username }) => {
   }
 
   return (
-    <div className="mt-6">
+    <div>
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-xl font-semibold text-white">Playlists</h2>
         <Link
@@ -115,7 +150,11 @@ const UserPlaylists: React.FC<UserPlaylistsProps> = ({ username }) => {
 
       {playlists.length === 0 ? (
         <div className="text-center py-6 bg-[#232126] rounded-lg">
-          <p className="text-gray-400">No playlists created yet</p>
+          <p className="text-gray-400">
+            {isCurrentUser
+              ? "No playlists created yet"
+              : `${username} hasn't created any public playlists yet`}
+          </p>
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">

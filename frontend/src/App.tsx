@@ -12,6 +12,7 @@ import MyPlaylists from "./pages/MyPlaylists";
 import LikedPlaylists from "./pages/LikedPlaylists";
 import PlaylistPage from "./pages/PlaylistPage";
 import SearchPage from "./pages/SearchPage";
+import ExplorePage from "./pages/ExplorePage";
 
 function App() {
   return (
@@ -38,6 +39,7 @@ function App() {
             element={<PlaylistPage />}
           />
           <Route path="/search/:query" element={<SearchPage />} />
+          <Route path="/explore" element={<ExplorePage />} />
           <Route path="*" element={<NotFoundPage />} />
         </Routes>
       </Router>

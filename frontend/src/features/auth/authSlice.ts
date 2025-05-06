@@ -1,12 +1,10 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import authService from "./authService";
 
-// Interface defining the User type
 interface User {
   access?: string;
 }
 
-// Main state interface for the auth slice
 interface AuthState {
   user: User | null;
   userInfo: any;
@@ -16,7 +14,6 @@ interface AuthState {
   message: string;
 }
 
-// Initialize user from localStorage if available
 const storedUser = localStorage.getItem("user");
 const user = storedUser ? JSON.parse(storedUser) : null;
 
@@ -29,7 +26,6 @@ const initialState: AuthState = {
   message: "",
 };
 
-// Interface for user registration data
 interface RegisterUserData {
   first_name: string;
   last_name: string;
@@ -49,6 +45,10 @@ export const register = createAsyncThunk(
     try {
       return await authService.register(userData);
     } catch (error: any) {
+      if (typeof error === "object" && error !== null) {
+        return thunkAPI.rejectWithValue(error);
+      }
+
       const message =
         (error.response &&
           error.response.data &&
@@ -69,7 +69,6 @@ export const login = createAsyncThunk(
   "auth/login",
   async (userData: any, thunkAPI) => {
     try {
-      console.log(userData);
       return await authService.login(userData);
     } catch (error: any) {
       const message =
