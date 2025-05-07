@@ -1,10 +1,7 @@
 import axios from "axios";
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { useSelector, useDispatch } from "react-redux";
 import { UserPlaylistData, BACKEND_DOMAIN } from "../types/playlists.ts";
-import { RootState, AppDispatch } from "../app/store";
-import { getUserInfo } from "../features/auth/authSlice";
 
 import NavBar from "../components/Navigation/NavBar.tsx";
 import { FilterButton } from "../components/Button";
@@ -15,10 +12,21 @@ import UserCard from "../components/Users/UserCard.tsx";
 import { AiOutlineLoading3Quarters } from "react-icons/ai";
 import { IoWarningOutline } from "react-icons/io5";
 
+interface User {
+  id: number;
+  username: string;
+  first_name: string;
+  last_name: string;
+  profile_picture: string | null;
+  follower_count: number;
+  following_count?: number;
+  is_following?: boolean;
+}
+
 /**
  * SearchPage Component
  *
- * @description A page component that displays search results for playlists based on a query parameter.
+ * @description A page component that displays search results for playlists and users based on a query parameter.
  * Fetches data from the API, sorts results by relevance, and handles loading and error states.
  * Also displays the logged-in user's profile card.
  *
@@ -27,80 +35,33 @@ import { IoWarningOutline } from "react-icons/io5";
  */
 const SearchPage = () => {
   const navigate = useNavigate();
-  const dispatch = useDispatch<AppDispatch>();
   const { query } = useParams();
-  const { user, userInfo } = useSelector((state: RootState) => state.auth);
 
   const [playlists, setPlaylists] = useState<UserPlaylistData[]>([]);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [users, setUsers] = useState<User[]>([]);
+  const [isLoadingPlaylists, setIsLoadingPlaylists] = useState<boolean>(true);
+  const [isLoadingUsers, setIsLoadingUsers] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [activeFilter, setActiveFilter] = useState<string>("All");
-  const [followerCount, setFollowerCount] = useState<number>(0);
-
-  /**
-   * Effect hook to fetch user info when component mounts
-   */
-  useEffect(() => {
-    if (user && (!userInfo || Object.keys(userInfo).length === 0)) {
-      dispatch(getUserInfo());
-    }
-  }, [user, userInfo, dispatch]);
-
-  /**
-   * Effect hook to fetch follower count when userInfo is available
-   */
-  useEffect(() => {
-    if (userInfo && userInfo.id) {
-      fetchFollowerCount(userInfo.id);
-    }
-  }, [userInfo]);
 
   /**
    * Effect hook to fetch search results when query changes
    */
   useEffect(() => {
     if (query) {
-      fetchSearchResults(query);
+      fetchPlaylistSearchResults(query);
+      fetchUserSearchResults(query);
     }
   }, [query]);
 
   /**
-   * Fetches follower count for the logged-in user
-   *
-   * @param {number} userId - The user ID to fetch follower count for
-   * @returns {Promise<void>}
-   */
-  const fetchFollowerCount = async (userId: number) => {
-    try {
-      const token = localStorage.getItem("user")
-        ? JSON.parse(localStorage.getItem("user") || "{}").access
-        : null;
-
-      if (!token) return;
-
-      const response = await axios.get(
-        `${BACKEND_DOMAIN}/api/v1/users/follow-status/${userId}/`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-
-      setFollowerCount(response.data.follower_count);
-    } catch (err) {
-      console.error("Error fetching follower count:", err);
-    }
-  };
-
-  /**
-   * Fetches search results from the API
+   * Fetches playlist search results from the API
    *
    * @param {string} searchQuery - The search query to find playlists
    * @returns {Promise<void>}
    */
-  const fetchSearchResults = async (searchQuery: string) => {
-    setIsLoading(true);
+  const fetchPlaylistSearchResults = async (searchQuery: string) => {
+    setIsLoadingPlaylists(true);
     setError(null);
 
     try {
@@ -122,10 +83,10 @@ const SearchPage = () => {
         searchQuery
       );
       setPlaylists(sortedPlaylists);
-      setIsLoading(false);
+      setIsLoadingPlaylists(false);
     } catch (err) {
-      setIsLoading(false);
-      console.error("Search results fetch error:", err);
+      setIsLoadingPlaylists(false);
+      console.error("Playlist search results fetch error:", err);
 
       if (axios.isAxiosError(err) && err.response) {
         if (err.response.status === 401) {
@@ -136,6 +97,65 @@ const SearchPage = () => {
         }
       } else {
         setError("Network error. Please check your connection and try again.");
+      }
+    }
+  };
+
+  /**
+   * Fetches user search results from the API
+   *
+   * @param {string} searchQuery
+   * @returns {Promise<void>}
+   */
+  const fetchUserSearchResults = async (searchQuery: string) => {
+    setIsLoadingUsers(true);
+    setError(null);
+
+    try {
+      const token = localStorage.getItem("user")
+        ? JSON.parse(localStorage.getItem("user") || "{}").access
+        : null;
+
+      if (!token) {
+        setIsLoadingUsers(false);
+        setUsers([]);
+        return;
+      }
+
+      const response = await axios.get(
+        `${BACKEND_DOMAIN}/api/v1/users/search/?q=${encodeURIComponent(
+          searchQuery
+        )}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      const sortedUsers = response.data.sort(
+        (a: User, b: User) => b.follower_count - a.follower_count
+      );
+
+      setUsers(sortedUsers);
+      setIsLoadingUsers(false);
+    } catch (err) {
+      setIsLoadingUsers(false);
+      console.error("User search results fetch error:", err);
+
+      if (!error) {
+        if (axios.isAxiosError(err) && err.response) {
+          if (err.response.status === 401) {
+            setError("Your session has expired. Please log in again.");
+            navigate("/login");
+          } else {
+            setError("Failed to load search results. Please try again.");
+          }
+        } else {
+          setError(
+            "Network error. Please check your connection and try again."
+          );
+        }
       }
     }
   };
@@ -190,61 +210,69 @@ const SearchPage = () => {
       .sort((a, b) => b.relevanceScore - a.relevanceScore);
   };
 
-  // Prepare user data for UserCard
-  const userData = userInfo
-    ? {
-        id: userInfo.id,
-        username: userInfo.username,
-        first_name: userInfo.first_name,
-        last_name: userInfo.last_name,
-        profile_picture: userInfo.profile_picture,
-        follower_count: followerCount,
-      }
-    : null;
+  // Determine which filter buttons to show based on results
+  const showUserFilter = users.length > 0;
+  const showPlaylistFilter = playlists.length > 0;
+
+  const getFilteredResults = () => {
+    if (
+      (users.length === 0 && playlists.length === 0) ||
+      (isLoadingUsers && isLoadingPlaylists)
+    ) {
+      return { filteredUsers: [], filteredPlaylists: [] };
+    }
+
+    if (activeFilter === "Users") {
+      return { filteredUsers: users, filteredPlaylists: [] };
+    } else if (activeFilter === "Playlists") {
+      return { filteredUsers: [], filteredPlaylists: playlists };
+    } else {
+      return { filteredUsers: users, filteredPlaylists: playlists };
+    }
+  };
+
+  const { filteredUsers, filteredPlaylists } = getFilteredResults();
+  const totalResultsCount = filteredUsers.length + filteredPlaylists.length;
+  const isLoading = isLoadingUsers || isLoadingPlaylists;
 
   return (
     <>
       <NavBar />
       <div className="container mx-auto p-6">
         <div className="flex flex-col md:flex-row gap-6">
-          {/* User Card Column */}
-          <div className="w-full md:w-1/4">
-            {userData ? (
-              <div>
-                <Header text="Your Profile" className="mb-4" />
-                <UserCard user={userData} />
-              </div>
-            ) : (
-              user && (
-                <div className="flex justify-center items-center h-48">
-                  <AiOutlineLoading3Quarters className="animate-spin h-8 w-8 text-gray-400" />
-                </div>
-              )
-            )}
-          </div>
-
-          {/* Search Results Column */}
           <div className="w-full md:w-3/4">
             <Header
-              text={`${playlists.length} result${
-                playlists.length !== 1 ? "s" : ""
+              text={`${totalResultsCount} result${
+                totalResultsCount !== 1 ? "s" : ""
               } for "${query}"`}
             />
 
-            {playlists.length >= 1 && (
+            {(showUserFilter || showPlaylistFilter) && !isLoading && (
               <div className="flex space-x-2 mt-2 mb-4">
-                {["All", "Users", "Playlists"].map((filter) => (
+                <FilterButton
+                  key="All"
+                  title="All"
+                  active={activeFilter === "All"}
+                  onClick={() => setActiveFilter("All")}
+                />
+
+                {showUserFilter && (
                   <FilterButton
-                    key={filter}
-                    title={filter}
-                    active={activeFilter === filter}
-                    onClick={() => {
-                      setActiveFilter((prev) =>
-                        prev === filter ? "" : filter
-                      );
-                    }}
+                    key="Users"
+                    title="Users"
+                    active={activeFilter === "Users"}
+                    onClick={() => setActiveFilter("Users")}
                   />
-                ))}
+                )}
+
+                {showPlaylistFilter && (
+                  <FilterButton
+                    key="Playlists"
+                    title="Playlists"
+                    active={activeFilter === "Playlists"}
+                    onClick={() => setActiveFilter("Playlists")}
+                  />
+                )}
               </div>
             )}
 
@@ -259,19 +287,48 @@ const SearchPage = () => {
               <div className="flex justify-center items-center h-64">
                 <AiOutlineLoading3Quarters className="animate-spin h-8 w-8 text-gray-400" />
               </div>
-            ) : playlists.length === 0 ? (
+            ) : totalResultsCount === 0 ? (
               <div className="text-center">
                 <Header text="No Results Found" />
                 <SecondaryText
-                  text={`We couldn't find any playlists matching "${query}"`}
+                  text={`We couldn't find any users or playlists matching "${query}"`}
                   className="text-gray-400 mt-2"
                 />
               </div>
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mt-6">
-                {playlists.map((playlist) => (
-                  <PlaylistCard key={playlist.id} playlist={playlist} />
-                ))}
+              <div>
+                {/* User Results Section */}
+                {filteredUsers.length > 0 && (
+                  <div className="mb-8">
+                    <SecondaryText
+                      text={`Users (${filteredUsers.length})`}
+                      className="text-gray-300 font-semibold mb-4"
+                    />
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {filteredUsers.map((user) => (
+                        <UserCard key={`user-${user.id}`} user={user} />
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Playlist Results Section */}
+                {filteredPlaylists.length > 0 && (
+                  <div>
+                    <SecondaryText
+                      text={`Playlists (${filteredPlaylists.length})`}
+                      className="text-gray-300 font-semibold mb-4"
+                    />
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                      {filteredPlaylists.map((playlist) => (
+                        <PlaylistCard
+                          key={`playlist-${playlist.id}`}
+                          playlist={playlist}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </div>
