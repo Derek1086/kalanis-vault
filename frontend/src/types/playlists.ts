@@ -27,6 +27,7 @@ export interface UserPlaylistData {
   share_count: number;
   videos: VideoData[];
   tags?: TagData[];
+  relevanceScore?: number;
 }
 
 export interface VideoData {

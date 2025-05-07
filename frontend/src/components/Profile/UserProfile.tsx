@@ -35,6 +35,16 @@ type UserData = {
 };
 
 /**
+ * @typedef {Object} FollowStatusData
+ * @property {boolean} is_following - Whether the current user is following the profile user
+ * @property {number} follower_count - The number of followers the profile user has
+ */
+type FollowStatusData = {
+  is_following: boolean;
+  follower_count: number;
+};
+
+/**
  * Component that displays a user profile with their information, stats, and playlists.
  * Allows following/unfollowing the user if logged in.
  *
@@ -51,6 +61,7 @@ const UserProfile = ({ username }: UserProfileProps) => {
   const [error, setError] = useState<string | null>(null);
   const [isFollowing, setIsFollowing] = useState(false);
   const [profileData, setProfileData] = useState<UserData | null>(null);
+  const [followLoading, setFollowLoading] = useState(false);
 
   const defaultProfileImage = `${BACKEND_DOMAIN}/media/profile_pics/default.png`;
 
@@ -155,6 +166,23 @@ const UserProfile = ({ username }: UserProfileProps) => {
             console.error("Response data:", likesErr.response?.data);
           }
 
+          try {
+            const followStatusResponse = await axios.get<FollowStatusData>(
+              `${BACKEND_DOMAIN}/api/v1/users/follow-status/${userId}/`,
+              {
+                headers: {
+                  Authorization: `Bearer ${token}`,
+                },
+              }
+            );
+            setIsFollowing(followStatusResponse.data.is_following);
+            setFollowersCount(followStatusResponse.data.follower_count);
+          } catch (followErr: any) {
+            console.error("Error fetching follow status:", followErr);
+            console.error("Response data:", followErr.response?.data);
+            setIsFollowing(false);
+          }
+
           setIsLoading(false);
         } else {
           throw new Error("Invalid user data received");
@@ -195,16 +223,18 @@ const UserProfile = ({ username }: UserProfileProps) => {
    */
   const handleFollowToggle = async () => {
     try {
+      setFollowLoading(true);
       const token = getAuthToken();
 
       if (!token || !profileData) {
         console.error("Missing token or profile data");
+        setFollowLoading(false);
         return;
       }
 
       if (isFollowing) {
         await axios.delete(
-          `${BACKEND_DOMAIN}/api/v1/follows/${profileData.id}/`,
+          `${BACKEND_DOMAIN}/api/v1/users/unfollow/${profileData.id}/`,
           {
             headers: {
               Authorization: `Bearer ${token}`,
@@ -213,17 +243,21 @@ const UserProfile = ({ username }: UserProfileProps) => {
         );
       } else {
         await axios.post(
-          `${BACKEND_DOMAIN}/api/v1/follows/`,
-          { followed: profileData.id },
+          `${BACKEND_DOMAIN}/api/v1/users/follow/`,
+          {
+            user_id: profileData.id,
+          },
           {
             headers: {
               Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json",
             },
           }
         );
       }
 
-      fetchUserProfile();
+      await fetchUserProfile();
+      setFollowLoading(false);
     } catch (err: any) {
       console.error("Error updating follow status:", err);
       console.error("Response data:", err.response?.data);
@@ -232,6 +266,7 @@ const UserProfile = ({ username }: UserProfileProps) => {
           err instanceof Error ? err.message : "Unknown error"
         }`
       );
+      setFollowLoading(false);
     }
   };
 
@@ -291,16 +326,24 @@ const UserProfile = ({ username }: UserProfileProps) => {
             </h1>
             <p className="text-lg text-gray-400">@{profileData.username}</p>
 
-            {/* Follow button */}
             <button
               onClick={handleFollowToggle}
+              disabled={followLoading}
               className={`mt-3 px-4 py-2 rounded-md transition ${
-                isFollowing
-                  ? "bg-gray-700 hover:bg-gray-600 text-white"
+                followLoading
+                  ? "bg-gray-600 cursor-not-allowed"
+                  : isFollowing
+                  ? "bg-[#692871] hover:bg-gray-600 text-white"
                   : "bg-[#c549d4] hover:bg-[#9b36b7] text-white"
               }`}
             >
-              {isFollowing ? "Unfollow" : "Follow"}
+              {followLoading ? (
+                <AiOutlineLoading3Quarters className="animate-spin h-4 w-4 inline" />
+              ) : isFollowing ? (
+                "Unfollow"
+              ) : (
+                "Follow"
+              )}
             </button>
           </div>
 
@@ -310,17 +353,23 @@ const UserProfile = ({ username }: UserProfileProps) => {
               <p className="text-xl font-semibold text-white">
                 {followersCount}
               </p>
-              <p className="text-sm text-gray-400">Followers</p>
+              <p className="text-sm text-gray-400">
+                {followersCount === 1 ? "Follower" : "Followers"}
+              </p>
             </div>
             <div className="text-center">
               <p className="text-xl font-semibold text-white">{likesCount}</p>
-              <p className="text-sm text-gray-400">Likes</p>
+              <p className="text-sm text-gray-400">
+                {likesCount === 1 ? "Like" : "Likes"}
+              </p>
             </div>
             <div className="text-center">
               <p className="text-xl font-semibold text-white">
                 {playlistsCount}
               </p>
-              <p className="text-sm text-gray-400">Playlists</p>
+              <p className="text-sm text-gray-400">
+                {playlistsCount === 1 ? "Playlist" : "Playlists"}
+              </p>
             </div>
           </div>
         </div>

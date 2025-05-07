@@ -29,7 +29,7 @@ const MAX_SEARCH_HISTORY = 5;
  * Navigation bar component that displays a search field and user controls.
  * Handles user authentication state and provides navigation functionality.
  * Features:
- * - Search functionality with search history autocomplete that filters based on query
+ * - Search functionality with search history and playlist autocomplete
  * - User dropdown menu with logout option
  * - Responsive design
  * - User profile picture display
@@ -69,6 +69,10 @@ const NavBar = ({ onCreatePlaylist }: NavBarProps) => {
    */
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchQuery(e.target.value);
+    // Show search suggestions whenever typing in the search field
+    if (!showSearchHistory) {
+      setShowSearchHistory(true);
+    }
   };
 
   /**

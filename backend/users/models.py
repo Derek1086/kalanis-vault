@@ -7,6 +7,7 @@ from django.db import models
 from django.contrib.auth.models import AbstractBaseUser, PermissionsMixin
 from django.utils.translation import gettext_lazy as _
 from .managers import CustomUserManager
+from django.core.exceptions import ValidationError
 
 class User(AbstractBaseUser, PermissionsMixin):
     """
@@ -78,3 +79,37 @@ class User(AbstractBaseUser, PermissionsMixin):
     def liked_playlist_count(self):
         """Returns the number of playlists this user has liked"""
         return self.liked_playlists.count()
+    
+class UserFollow(models.Model):
+    """
+    Model to track user follow relationships.
+    
+    This model creates a many-to-many relationship between users,
+    allowing users to follow each other.
+    """
+    follower = models.ForeignKey(
+        User, 
+        related_name='following', 
+        on_delete=models.CASCADE,
+        help_text="The user who is following"
+    )
+    followed = models.ForeignKey(
+        User, 
+        related_name='followers', 
+        on_delete=models.CASCADE,
+        help_text="The user who is being followed"
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('follower', 'followed')
+        verbose_name = _("User Follow")
+        verbose_name_plural = _("User Follows")
+
+    def __str__(self):
+        return f"{self.follower.username} follows {self.followed.username}"
+
+    def clean(self):
+        """Validate that users cannot follow themselves."""
+        if self.follower == self.followed:
+            raise ValidationError(_("Users cannot follow themselves."))

@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from "react";
 import axios from "axios";
-import { Link } from "react-router-dom";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { UserPlaylistData, BACKEND_DOMAIN } from "../../types/playlists";
+
 import PlaylistCard from "../Playlists/PlaylistCard";
+
 import { AiOutlineLoading3Quarters } from "react-icons/ai";
 import { IoWarningOutline } from "react-icons/io5";
 
@@ -17,6 +18,7 @@ type UserPlaylistsProps = {
 
 /**
  * Component that fetches and displays a list of playlists for a specific user
+ * with infinite scrolling functionality
  *
  * @component
  * @param {object} props - Component props
@@ -26,25 +28,34 @@ type UserPlaylistsProps = {
 const UserPlaylists: React.FC<UserPlaylistsProps> = ({ username }) => {
   const [playlists, setPlaylists] = useState<UserPlaylistData[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [isLoadingMore, setIsLoadingMore] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [isCurrentUser, setIsCurrentUser] = useState<boolean>(false);
+  const [page, setPage] = useState<number>(1);
+  const [hasMore, setHasMore] = useState<boolean>(true);
 
-  /**
-   * Effect hook to fetch user playlists when the username changes
-   */
-  useEffect(() => {
-    fetchUserPlaylists();
-  }, [username]);
+  const PLAYLISTS_PER_PAGE = 6;
+  const observerRef = useRef<IntersectionObserver | null>(null);
+  const loadMoreRef = useRef<HTMLDivElement>(null);
 
   /**
    * Fetches the user's playlists from the backend API
    *
    * @async
    * @function fetchUserPlaylists
+   * @param {number} pageNum - The page number to fetch
+   * @param {boolean} isInitial - Whether this is the initial fetch
    * @returns {Promise<void>}
    */
-  const fetchUserPlaylists = async (): Promise<void> => {
-    setIsLoading(true);
+  const fetchUserPlaylists = async (
+    pageNum: number,
+    isInitial: boolean = false
+  ): Promise<void> => {
+    if (isInitial) {
+      setIsLoading(true);
+    } else {
+      setIsLoadingMore(true);
+    }
     setError(null);
 
     try {
@@ -55,10 +66,10 @@ const UserPlaylists: React.FC<UserPlaylistsProps> = ({ username }) => {
       if (!token) {
         setError("Authentication required");
         setIsLoading(false);
+        setIsLoadingMore(false);
         return;
       }
 
-      // Check if the username is the current logged-in user
       const currentUser = localStorage.getItem("user")
         ? JSON.parse(localStorage.getItem("user") || "{}").username
         : null;
@@ -68,17 +79,19 @@ const UserPlaylists: React.FC<UserPlaylistsProps> = ({ username }) => {
 
       let response;
       if (isCurrentUser) {
-        // If viewing own profile, fetch from my_playlists endpoint
         response = await axios.get<UserPlaylistData[]>(
           `${BACKEND_DOMAIN}/api/v1/playlists/my_playlists/`,
           {
             headers: {
               Authorization: `Bearer ${token}`,
             },
+            params: {
+              page: pageNum,
+              limit: PLAYLISTS_PER_PAGE,
+            },
           }
         );
       } else {
-        // If viewing another user's profile, fetch all public playlists and filter by username
         response = await axios.get<UserPlaylistData[]>(
           `${BACKEND_DOMAIN}/api/v1/playlists/`,
           {
@@ -87,24 +100,42 @@ const UserPlaylists: React.FC<UserPlaylistsProps> = ({ username }) => {
             },
             params: {
               username: username,
+              page: pageNum,
+              limit: PLAYLISTS_PER_PAGE,
             },
           }
         );
 
-        // Filter the playlists to only show the ones from the specified user
         const filteredPlaylists = response.data.filter(
           (playlist) => playlist.user.username === username
         );
 
-        setPlaylists(filteredPlaylists);
+        setHasMore(filteredPlaylists.length === PLAYLISTS_PER_PAGE);
+
+        if (isInitial) {
+          setPlaylists(filteredPlaylists);
+        } else {
+          setPlaylists((prev) => [...prev, ...filteredPlaylists]);
+        }
+
         setIsLoading(false);
+        setIsLoadingMore(false);
         return;
       }
 
-      setPlaylists(response.data);
+      setHasMore(response.data.length === PLAYLISTS_PER_PAGE);
+
+      if (isInitial) {
+        setPlaylists(response.data);
+      } else {
+        setPlaylists((prev) => [...prev, ...response.data]);
+      }
+
       setIsLoading(false);
+      setIsLoadingMore(false);
     } catch (err) {
       setIsLoading(false);
+      setIsLoadingMore(false);
       console.error("Playlist fetch error:", err);
 
       if (axios.isAxiosError(err) && err.response) {
@@ -118,6 +149,51 @@ const UserPlaylists: React.FC<UserPlaylistsProps> = ({ username }) => {
       }
     }
   };
+
+  /**
+   * Sets up the intersection observer for infinite scrolling
+   */
+  const setupObserver = useCallback(() => {
+    if (observerRef.current) {
+      observerRef.current.disconnect();
+    }
+
+    observerRef.current = new IntersectionObserver(
+      (entries) => {
+        const [entry] = entries;
+        if (entry.isIntersecting && hasMore && !isLoadingMore) {
+          setPage((prevPage) => prevPage + 1);
+        }
+      },
+      { rootMargin: "100px" }
+    );
+
+    if (loadMoreRef.current) {
+      observerRef.current.observe(loadMoreRef.current);
+    }
+  }, [hasMore, isLoadingMore]);
+
+  useEffect(() => {
+    setPage(1);
+    setPlaylists([]);
+    fetchUserPlaylists(1, true);
+  }, [username]);
+
+  useEffect(() => {
+    if (page > 1) {
+      fetchUserPlaylists(page);
+    }
+  }, [page]);
+
+  useEffect(() => {
+    setupObserver();
+
+    return () => {
+      if (observerRef.current) {
+        observerRef.current.disconnect();
+      }
+    };
+  }, [setupObserver]);
 
   if (isLoading) {
     return (
@@ -140,12 +216,6 @@ const UserPlaylists: React.FC<UserPlaylistsProps> = ({ username }) => {
     <div>
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-xl font-semibold text-white">Playlists</h2>
-        <Link
-          to={`/${username}/playlists`}
-          className="text-sm text-purple-400 hover:text-purple-300"
-        >
-          View All
-        </Link>
       </div>
 
       {playlists.length === 0 ? (
@@ -157,11 +227,23 @@ const UserPlaylists: React.FC<UserPlaylistsProps> = ({ username }) => {
           </p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-          {playlists.slice(0, 3).map((playlist) => (
-            <PlaylistCard key={playlist.id} playlist={playlist} />
-          ))}
-        </div>
+        <>
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+            {playlists.map((playlist) => (
+              <PlaylistCard key={playlist.id} playlist={playlist} />
+            ))}
+          </div>
+
+          {/* Load more indicator */}
+          <div
+            ref={loadMoreRef}
+            className="h-10 w-full flex justify-center items-center mt-4"
+          >
+            {isLoadingMore && (
+              <AiOutlineLoading3Quarters className="animate-spin h-5 w-5 text-gray-400" />
+            )}
+          </div>
+        </>
       )}
     </div>
   );

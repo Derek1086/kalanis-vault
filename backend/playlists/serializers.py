@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Playlist, Video, UserFollow, Tag, PlaylistView
+from .models import Playlist, Video, Tag, PlaylistView
 from users.serializers import CreateUserSerializer
 
 class TagSerializer(serializers.ModelSerializer):
@@ -95,18 +95,6 @@ class PlaylistCreateSerializer(serializers.ModelSerializer):
             if isinstance(tag_name, str):
                 tag, created = Tag.objects.get_or_create(name=tag_name.strip().lower())
                 playlist.tags.add(tag)
-
-class UserFollowSerializer(serializers.ModelSerializer):
-    """
-    Serializer for the UserFollow model.
-    """
-    follower_detail = CreateUserSerializer(source='follower', read_only=True)
-    followed_detail = CreateUserSerializer(source='followed', read_only=True)
-    
-    class Meta:
-        model = UserFollow
-        fields = ['id', 'follower', 'followed', 'created_at', 'follower_detail', 'followed_detail']
-        read_only_fields = ['created_at']
 
 class PlaylistViewSerializer(serializers.ModelSerializer):
     """

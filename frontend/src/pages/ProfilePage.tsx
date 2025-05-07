@@ -1,6 +1,8 @@
-import { useSelector } from "react-redux";
+import { useSelector, useDispatch } from "react-redux";
 import { useParams } from "react-router-dom";
-import { RootState } from "../app/store";
+import { useEffect } from "react";
+import { RootState, AppDispatch } from "../app/store";
+import { getUserInfo } from "../features/auth/authSlice";
 
 import NavBar from "../components/Navigation/NavBar";
 import OwnProfile from "../components/Profile/OwnProfile";
@@ -18,8 +20,26 @@ import UserProfile from "../components/Profile/UserProfile";
  */
 const ProfilePage = () => {
   const { username } = useParams();
-  const { userInfo } = useSelector((state: RootState) => state.auth);
+  const dispatch = useDispatch<AppDispatch>();
+  const { user, userInfo } = useSelector((state: RootState) => state.auth);
+
   const isOwnProfile = userInfo && userInfo.username === username;
+
+  const accessToken =
+    user?.access ||
+    (localStorage.getItem("user")
+      ? JSON.parse(localStorage.getItem("user") || "{}").access
+      : null);
+
+  /**
+   * Effect to dispatch getUserInfo action when user is logged in
+   * but detailed user information is not yet available
+   */
+  useEffect(() => {
+    if (user && (!userInfo || Object.keys(userInfo).length === 0)) {
+      dispatch(getUserInfo());
+    }
+  }, [user, userInfo, dispatch]);
 
   return (
     <>
@@ -28,7 +48,11 @@ const ProfilePage = () => {
         <div className="w-full max-w-4xl bg-[#242424] rounded-xl shadow-lg overflow-hidden text-white">
           {username &&
             (isOwnProfile ? (
-              <OwnProfile username={username} />
+              <OwnProfile
+                username={username}
+                userInfo={userInfo}
+                accessToken={accessToken}
+              />
             ) : (
               <UserProfile username={username} />
             ))}

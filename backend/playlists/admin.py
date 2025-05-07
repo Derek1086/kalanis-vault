@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Playlist, Video, UserFollow, Tag, PlaylistView
+from .models import Playlist, Video, Tag, PlaylistView
 
 @admin.register(Tag)
 class TagAdmin(admin.ModelAdmin):
@@ -21,13 +21,6 @@ class VideoAdmin(admin.ModelAdmin):
     list_filter = ['added_at', 'playlist__title']
     search_fields = ['title', 'tiktok_id', 'tiktok_url', 'playlist__title']
     readonly_fields = ['added_at']
-
-@admin.register(UserFollow)
-class UserFollowAdmin(admin.ModelAdmin):
-    list_display = ['follower', 'followed', 'created_at']
-    list_filter = ['created_at']
-    search_fields = ['follower__username', 'followed__username']
-    readonly_fields = ['created_at']
 
 @admin.register(PlaylistView)
 class PlaylistViewAdmin(admin.ModelAdmin):

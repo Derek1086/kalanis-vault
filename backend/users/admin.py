@@ -6,7 +6,7 @@ from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from .forms import CustomUserChangeForm, CustomUserCreationForm
 from django.utils.translation import gettext_lazy as _
-from .models import User
+from .models import User, UserFollow
 
 class UserAdmin(BaseUserAdmin):
     """
@@ -36,5 +36,22 @@ class UserAdmin(BaseUserAdmin):
             "fields": ("email", "username", "first_name", "last_name", "password1", "password2", "is_staff", "is_active", "profile_picture"),
         }),
     )
+
+@admin.register(UserFollow)
+class UserFollowAdmin(admin.ModelAdmin):
+    """
+    Admin configuration for the UserFollow model.
+    """
+    list_display = ['follower', 'followed', 'created_at']
+    list_filter = ['created_at']
+    search_fields = ['follower__username', 'followed__username', 'follower__email', 'followed__email']
+    date_hierarchy = 'created_at'
+    
+    def formfield_for_foreignkey(self, db_field, request, **kwargs):
+        """Customize the foreign key fields in the admin form."""
+        if db_field.name == "follower" or db_field.name == "followed":
+            kwargs["queryset"] = User.objects.order_by('username')
+        return super().formfield_for_foreignkey(db_field, request, **kwargs)
+
 
 admin.site.register(User, UserAdmin)

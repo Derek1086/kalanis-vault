@@ -124,25 +124,7 @@ class Video(models.Model):
                 os.remove(thumbnail_path)
                 
         super().delete(*args, **kwargs)
-
-
-class UserFollow(models.Model):
-    """
-    Model to track user following relationships.
-    """
-    follower = models.ForeignKey(User, related_name="following", on_delete=models.CASCADE)
-    followed = models.ForeignKey(User, related_name="followers", on_delete=models.CASCADE)
-    created_at = models.DateTimeField(auto_now_add=True)
     
-    class Meta:
-        verbose_name = _("User Follow")
-        verbose_name_plural = _("User Follows")
-        unique_together = ['follower', 'followed']
-    
-    def __str__(self):
-        return f"{self.follower.username} follows {self.followed.username}"
-    
-
 class PlaylistView(models.Model):
     """
     Model to track user's playlist view history.

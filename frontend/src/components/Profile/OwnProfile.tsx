@@ -1,9 +1,6 @@
 import axios from "axios";
-import { useSelector, useDispatch } from "react-redux";
 import { useNavigate } from "react-router-dom";
-import { RootState, AppDispatch } from "../../app/store";
 import { useState, useEffect } from "react";
-import { getUserInfo } from "../../features/auth/authSlice";
 import { PlaylistData, BACKEND_DOMAIN } from "../../types/playlists";
 
 import EditProfile from "../Forms/EditProfile";
@@ -18,9 +15,23 @@ import { AiOutlineLoading3Quarters } from "react-icons/ai";
  * Props for the OwnProfile component
  * @typedef {Object} OwnProfileProps
  * @property {string} username - The username of the current user
+ * @property {Object} userInfo - The user information object from Redux state
+ * @property {string} accessToken - The JWT access token for API calls
  */
 type OwnProfileProps = {
   username: string;
+  userInfo: any;
+  accessToken: string;
+};
+
+/**
+ * @typedef {Object} FollowStatusData
+ * @property {boolean} is_following - Whether the current user is following the profile user
+ * @property {number} follower_count - The number of followers the profile user has
+ */
+type FollowStatusData = {
+  is_following: boolean;
+  follower_count: number;
 };
 
 /**
@@ -30,11 +41,8 @@ type OwnProfileProps = {
  * @param {OwnProfileProps} props - Component props
  * @returns {JSX.Element} - The rendered component
  */
-const OwnProfile = ({ username }: OwnProfileProps) => {
-  const dispatch = useDispatch<AppDispatch>();
+const OwnProfile = ({ username, userInfo, accessToken }: OwnProfileProps) => {
   const navigate = useNavigate();
-
-  const { user, userInfo } = useSelector((state: RootState) => state.auth);
 
   const [isEditing, setIsEditing] = useState(false);
   const [playlistsCount, setPlaylistsCount] = useState(0);
@@ -54,23 +62,13 @@ const OwnProfile = ({ username }: OwnProfileProps) => {
   });
 
   /**
-   * Effect to fetch user data when the user object is available
+   * Effect to fetch user data when the component mounts
    */
   useEffect(() => {
-    if (user) {
+    if (accessToken) {
       fetchUserData();
     }
-  }, [user]);
-
-  /**
-   * Effect to dispatch getUserInfo action when user is logged in
-   * but detailed user information is not yet available
-   */
-  useEffect(() => {
-    if (user && Object.keys(userInfo || {}).length === 0) {
-      dispatch(getUserInfo());
-    }
-  }, [user, userInfo, dispatch]);
+  }, [accessToken]);
 
   /**
    * Effect to update local profile state when userInfo changes
@@ -102,52 +100,69 @@ const OwnProfile = ({ username }: OwnProfileProps) => {
     setError(null);
 
     try {
-      const token =
-        user?.access || localStorage.getItem("user")
-          ? JSON.parse(localStorage.getItem("user") || "{}").access
-          : null;
-
-      if (!token) {
+      if (!accessToken) {
         setError("Authentication required");
         setIsLoading(false);
         return;
       }
 
-      const playlistsResponse = await axios.get<PlaylistData[]>(
-        `${BACKEND_DOMAIN}/api/v1/playlists/my_playlists/`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-      setPlaylistsCount(playlistsResponse.data.length);
+      let requestsSuccessful = true;
 
-      const likedPlaylistsResponse = await axios.get<PlaylistData[]>(
-        `${BACKEND_DOMAIN}/api/v1/playlists/liked_playlists/`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-      setLikesCount(likedPlaylistsResponse.data.length);
+      try {
+        const playlistsResponse = await axios.get<PlaylistData[]>(
+          `${BACKEND_DOMAIN}/api/v1/playlists/my_playlists/`,
+          {
+            headers: {
+              Authorization: `Bearer ${accessToken}`,
+            },
+          }
+        );
+        setPlaylistsCount(playlistsResponse.data.length);
+      } catch (err) {
+        console.error("Error fetching playlists:", err);
+        requestsSuccessful = false;
+      }
 
-      const followersResponse = await axios.get(
-        `${BACKEND_DOMAIN}/api/v1/follows/`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
+      try {
+        const likedPlaylistsResponse = await axios.get<PlaylistData[]>(
+          `${BACKEND_DOMAIN}/api/v1/playlists/liked_playlists/`,
+          {
+            headers: {
+              Authorization: `Bearer ${accessToken}`,
+            },
+          }
+        );
+        setLikesCount(likedPlaylistsResponse.data.length);
+      } catch (err) {
+        console.error("Error fetching liked playlists:", err);
+        requestsSuccessful = false;
+      }
 
-      const followers = followersResponse.data.filter(
-        (follow: any) => follow.followed === userInfo.id
-      );
-      setFollowersCount(followers.length);
+      try {
+        if (userInfo && userInfo.id) {
+          const followStatusResponse = await axios.get<FollowStatusData>(
+            `${BACKEND_DOMAIN}/api/v1/users/follow-status/${userInfo.id}/`,
+            {
+              headers: {
+                Authorization: `Bearer ${accessToken}`,
+              },
+            }
+          );
+          setFollowersCount(followStatusResponse.data.follower_count);
+        } else {
+          console.error("User ID not available for follow status check");
+          requestsSuccessful = false;
+        }
+      } catch (err) {
+        console.error("Error fetching followers:", err);
+        requestsSuccessful = false;
+      }
 
       setIsLoading(false);
+
+      if (!requestsSuccessful) {
+        setError("Some user data could not be loaded");
+      }
     } catch (err) {
       setIsLoading(false);
       console.error("Error fetching data:", err);
@@ -221,17 +236,23 @@ const OwnProfile = ({ username }: OwnProfileProps) => {
                 <p className="text-xl font-semibold text-white">
                   {followersCount}
                 </p>
-                <p className="text-sm text-gray-400">Followers</p>
+                <p className="text-sm text-gray-400">
+                  {followersCount === 1 ? "Follower" : "Followers"}
+                </p>
               </div>
               <div className="text-center">
                 <p className="text-xl font-semibold text-white">{likesCount}</p>
-                <p className="text-sm text-gray-400">Likes</p>
+                <p className="text-sm text-gray-400">
+                  {likesCount === 1 ? "Like" : "Likes"}
+                </p>
               </div>
               <div className="text-center">
                 <p className="text-xl font-semibold text-white">
                   {playlistsCount}
                 </p>
-                <p className="text-sm text-gray-400">Playlists</p>
+                <p className="text-sm text-gray-400">
+                  {playlistsCount === 1 ? "Playlist" : "Playlists"}
+                </p>
               </div>
             </div>
           </div>

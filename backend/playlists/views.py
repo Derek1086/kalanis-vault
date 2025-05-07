@@ -2,12 +2,11 @@ from rest_framework import viewsets, status, filters
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated, SAFE_METHODS
-from .models import Playlist, Video, UserFollow, Tag, PlaylistView
+from .models import Playlist, Video, Tag, PlaylistView
 from .serializers import (
     PlaylistSerializer, 
     PlaylistCreateSerializer,
     VideoSerializer, 
-    UserFollowSerializer, 
     TagSerializer
 )
 from .permissions import IsOwnerOrReadOnly
@@ -260,49 +259,3 @@ class VideoViewSet(viewsets.ModelViewSet):
             serializer.save()
 
 
-class UserFollowViewSet(viewsets.ModelViewSet):
-    """
-    ViewSet for managing user follows.
-    """
-    serializer_class = UserFollowSerializer
-    permission_classes = [IsAuthenticated]
-    
-    def get_queryset(self):
-        """
-        Return follows where the current user is either follower or followed.
-        """
-        user = self.request.user
-        return UserFollow.objects.filter(
-            Q(follower=user) | Q(followed=user)
-        )
-    
-    def perform_create(self, serializer):
-        """
-        Set the follower as the current user.
-        """
-        serializer.save(follower=self.request.user)
-    
-    @action(detail=False, methods=['post'])
-    def toggle_follow(self, request):
-        """
-        Toggle follow status for a user.
-        """
-        user_to_follow_id = request.data.get('user_id')
-        if not user_to_follow_id:
-            return Response({'detail': 'User ID is required.'}, status=status.HTTP_400_BAD_REQUEST)
-        
-        try:
-            user_to_follow = User.objects.get(id=user_to_follow_id)
-        except User.DoesNotExist:
-            return Response({'detail': 'User not found.'}, status=status.HTTP_404_NOT_FOUND)
-        
-        if user_to_follow == request.user:
-            return Response({'detail': 'You cannot follow yourself.'}, status=status.HTTP_400_BAD_REQUEST)
-        
-        try:
-            follow = UserFollow.objects.get(follower=request.user, followed=user_to_follow)
-            follow.delete()
-            return Response({'status': 'unfollowed'})
-        except UserFollow.DoesNotExist:
-            UserFollow.objects.create(follower=request.user, followed=user_to_follow)
-            return Response({'status': 'followed'})

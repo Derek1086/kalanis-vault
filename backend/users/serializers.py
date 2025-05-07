@@ -9,6 +9,7 @@ from djoser.serializers import UserCreateSerializer
 from rest_framework import serializers
 from djoser.serializers import TokenCreateSerializer
 from django.contrib.auth import authenticate
+from .models import UserFollow
 
 logger = logging.getLogger('users')
 
@@ -87,3 +88,19 @@ class CustomTokenCreateSerializer(TokenCreateSerializer):
 
         attrs['user'] = user
         return attrs
+    
+class UserFollowSerializer(serializers.ModelSerializer):
+    """
+    Serializer for user follow relationships.
+    """
+    class Meta:
+        model = UserFollow
+        fields = ['id', 'follower', 'followed', 'created_at']
+        read_only_fields = ['id', 'created_at']
+
+class UserFollowStatusSerializer(serializers.Serializer):
+    """
+    Serializer for checking if a user is following another user.
+    """
+    is_following = serializers.BooleanField()
+    follower_count = serializers.IntegerField()
