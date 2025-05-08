@@ -10,9 +10,9 @@ from .serializers import (
     TagSerializer
 )
 from .permissions import IsOwnerOrReadOnly
-from django.db.models import Q, F  
+from django.db.models import Q, F, Count
 from django.utils import timezone
-from users.models import User
+import random
 
 class TagViewSet(viewsets.ModelViewSet):
     """
@@ -108,7 +108,6 @@ class PlaylistViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_401_UNAUTHORIZED
             )
         
-        # Get distinct playlists from user's view history, ordered by most recent view
         recent_views = PlaylistView.objects.filter(
             user=request.user
         ).order_by('-viewed_at')[:10]
@@ -145,6 +144,53 @@ class PlaylistViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
     
+    @action(detail=False, methods=['get'])
+    def explore(self, request):
+        """
+        Returns a random selection of public playlists for exploration.
+        Supports pagination for infinite scrolling with 6 playlists per page.
+        """
+        page = int(request.query_params.get('page', 1))
+        limit = int(request.query_params.get('limit', 6)) 
+        
+        base_queryset = Playlist.objects.filter(
+            is_public=True
+        ).annotate(
+            num_videos=Count('videos')
+        ).filter(
+            num_videos__gt=0
+        ).prefetch_related('videos', 'likes', 'tags')
+        
+        day_of_year = timezone.now().timetuple().tm_yday
+        user_id = request.user.id
+        seed = day_of_year * 1000 + user_id + page
+        random.seed(seed)
+        
+        total_playlists = base_queryset.count()
+        
+        if total_playlists <= limit:
+            queryset = base_queryset.all()
+        else:
+            offset = (page - 1) * limit
+            if offset >= total_playlists:
+                queryset = []
+            else:
+                playlist_ids = list(base_queryset.values_list('id', flat=True))
+                random.shuffle(playlist_ids)
+                
+                end_idx = min(offset + limit, len(playlist_ids))
+                page_ids = playlist_ids[offset:end_idx]
+                
+                if page_ids:
+                    queryset = Playlist.objects.filter(
+                        id__in=page_ids
+                    ).prefetch_related('videos', 'likes', 'tags')
+                else:
+                    queryset = []
+        
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data)
+
     @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated])
     def like(self, request, pk=None):
         """

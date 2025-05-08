@@ -3,7 +3,7 @@ import React, { useState, useEffect } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { RootState, AppDispatch } from "../app/store";
 import { getUserInfo } from "../features/auth/authSlice";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { UserPlaylistData, BACKEND_DOMAIN } from "../types/playlists.ts";
 
 import NavBar from "../components/Navigation/NavBar.tsx";
@@ -25,6 +25,8 @@ import { IoWarningOutline } from "react-icons/io5";
  */
 const LikedPlaylists: React.FC = () => {
   const dispatch = useDispatch<AppDispatch>();
+  const navigate = useNavigate();
+
   const { user, userInfo } = useSelector((state: RootState) => state.auth);
 
   const [playlists, setPlaylists] = useState<UserPlaylistData[]>([]);
@@ -88,6 +90,7 @@ const LikedPlaylists: React.FC = () => {
 
         if (err.response.status === 401) {
           setError("Your session has expired. Please log in again.");
+          navigate("/login");
         } else {
           setError("Failed to load liked playlists. Please try again.");
         }

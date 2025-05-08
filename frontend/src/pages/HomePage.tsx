@@ -475,8 +475,6 @@ const HomePage = () => {
           {renderPopularPlaylists()}
         </CarouselBar>
       )}
-
-      <CarouselBar title="Recommended Playlists" totalItems={0} />
     </>
   );
 };
